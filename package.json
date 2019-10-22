@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@aws-amplify/api": "^1.2.2",
+    "@aws-amplify/pubsub": "^1.2.2",
+    "aws-amplify-react": "^2.5.2",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
     "react-scripts": "3.2.0"
