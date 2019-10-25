@@ -4,9 +4,10 @@ import React, { Component } from 'react';
 - convert text modes to images
 */
 const weatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=Barna,ie&appid=7844d2a2a82bb813b21942e3c97eb67a';
-const thingSpeakTempUrl = 'https://api.thingspeak.com/channels/879596/fields/1.json?results=10';
-const thingSpeakModeUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
-const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field3=';
+const thingSpeakTempUrl = 'https://api.thingspeak.com/channels/879596/fields/1/last.json';
+const thingSpeakModeUrl = 'https://api.thingspeak.com/channels/879596/fields/2/last.json';
+const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
+const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
 class Mode extends Component {
   render() {
@@ -52,18 +53,17 @@ class Status extends Component {
 class TempDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { loading: true };
+    this.state = ({ tempInside: 'Loading...' });
   }
 
   componentDidMount() {
     fetch(weatherApiUrl).then(res => res.json()).then((data) => {
       const tempCelsius = Math.round(data.main.temp - 273.15);
       this.setState({ tempOutside: tempCelsius });
-    })
+    });
     thingSpeak(thingSpeakTempUrl, (res) => {
-      const temp = res.feeds[0].field1;
-      console.log(temp);
-      this.setState({ tempInside: temp, loading: false });
+      const temp = res.field1;
+      this.setState({ tempInside: temp });
     });
   }
 
@@ -80,7 +80,15 @@ class TempDisplay extends Component {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { status: mockData.status };
+    this.state = { status: { mode: 'Loading...' } };
+  }
+
+  componentDidMount() {
+    thingSpeak(thingSpeakModeUrl, (res) => {
+      const fieldVal = res.field2
+      const mode = fieldVal === '0' ? 'Off' : fieldVal === '1' ? 'On' : 'Fixed Temp';
+      this.setState({ status: { mode: mode } });
+    });
   }
 
   handleSchedule() {
@@ -88,15 +96,15 @@ class App extends Component {
   }
 
   handleFixedTemp() {
-    this.setState({ status: { mode: 'Fixed Temp' } });
+    thingSpeak(thingSpeakControlTempUrl + '25', () => this.setState({ status: { mode: 'Fixed Temp' } }))
   }
 
   handleOn() {
-    thingSpeak(thingSpeakModeUrl + '1', (res) => this.setState({ status: { mode: 'On' } }))
+    thingSpeak(thingSpeakModeWriteUrl + '1', () => this.setState({ status: { mode: 'On' } }))
   }
 
   handleOff() {
-    thingSpeak(thingSpeakModeUrl + '0', (res) => this.setState({ status: { mode: 'Off' } }))
+    thingSpeak(thingSpeakModeWriteUrl + '0', () => this.setState({ status: { mode: 'Off' } }))
   }
 
   render() {
@@ -132,7 +140,7 @@ function sleep(milliseconds) {
 }
 
 const mockData = {
-  status: { mode: 'Schedule', startTime: 1571694202667, durationMins: 60 },
+  status: { mode: 'Off', startTime: 1571694202667, durationMins: 60 },
 };
 
 export default App;
