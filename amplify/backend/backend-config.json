@@ -1,0 +1,9 @@
+{
+	"function": {
+		"changeHeatingState": {
+			"service": "Lambda",
+			"providerPlugin": "awscloudformation",
+			"build": true
+		}
+	}
+}

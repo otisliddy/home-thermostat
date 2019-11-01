@@ -1,13 +1,29 @@
 import React, { Component } from 'react';
+import uuidv4 from 'uuid/v4';
+import StepFunctions from 'aws-sdk/clients/stepfunctions';
+import AWS from 'aws-sdk';
+import { Auth } from 'aws-amplify'; 
 
-/*TODO: -convert components to functional components
+/*TODO: - convert components to functional components
 - convert text modes to images
+- create state machine through amplify
 */
 const weatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=Barna,ie&appid=7844d2a2a82bb813b21942e3c97eb67a';
 const thingSpeakTempUrl = 'https://api.thingspeak.com/channels/879596/fields/1/last.json';
 const thingSpeakModeUrl = 'https://api.thingspeak.com/channels/879596/fields/2/last.json';
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
+
+// AWS Constants
+const changeHeatingStateLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:change-heating-state-test';
+const identityPoolId = 'eu-west-1:12319816-c5b9-4593-8dae-129cfab87abf';
+
+AWS.config.region = 'eu-west-1';
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+  IdentityPoolId: identityPoolId,
+});
+
+const stepFunctions = new StepFunctions();
 
 class Mode extends Component {
   render() {
@@ -100,7 +116,17 @@ class App extends Component {
   }
 
   handleOn() {
-    thingSpeak(thingSpeakModeWriteUrl + '1', () => this.setState({ status: { mode: 'On' } }))
+    const params = {
+      stateMachineArn: changeHeatingStateLambdaArn,
+      input: '{"waitSeconds": "5","action": "0"}', //use json.stringify
+      name: 'TurnOffHeating-' + uuidv4(),
+    };
+    stepFunctions.startExecution(params, function(err, data) {
+      if (err) {
+        console.log(err, err.stack);
+      }
+    });
+    //thingSpeak(thingSpeakModeWriteUrl + '1', () => this.setState({ status: { mode: 'On' } }))
   }
 
   handleOff() {
@@ -118,29 +144,30 @@ class App extends Component {
   }
 }
 
-//TODO clean up
-async function thingSpeak(url, callback) {
-  let response = 0;
-  for (var i = 0; i < 20; i++) {
-    console.log(i);
-    fetch(url).then(res => res.json()).then((data) => {
-      response = data;
-    });
-    if (response !== 0) {
-      callback(response);
-      return;
-    } else {
-      await sleep(1000);
-    }
-  }
+function thingSpeak(url, callback) {
+  fetchRetry(url, callback, 20);
+}
+
+function fetchRetry(url, callback, n) {
+  return new Promise(function (resolve, reject) {
+    fetch(url).then(res => res.json()).then(async (data) => {
+      if (data !== 0) {
+        callback(data);
+        resolve(data);
+      } else {
+        if (n === 1) return reject('Max retries reached');
+        await sleep(1000);
+        fetchRetry(url, callback, n - 1);
+      }
+    }).catch(function (error) {
+      alert('proper error, report to Otis: ' + error);
+      reject(error)
+    })
+  });
 }
 
 function sleep(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
-
-const mockData = {
-  status: { mode: 'Off', startTime: 1571694202667, durationMins: 60 },
-};
 
 export default App;
