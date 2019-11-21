@@ -1,32 +1,54 @@
-body {
-  padding-bottom: 10px;
+* {
   color: white;
-  background-color: #263238;
   font: 18px "Century Gothic", Futura, sans-serif;
+}
+
+body {
+  background-color: #263238;
   text-align: center;
 }
 
 .tempDisplay {
-padding: 10px;
+  padding: 10px;
 }
 
 .status {
-padding: 10px;
+  padding: 10px;
 }
 
 .selectMode {
-padding: 10px;
-display: inline-block;
+  display: flex;
+  justify-content: center;
 }
 
-.modeButton {
-background-color: #BF360C;
-border: none;
-color: white;
-padding: 15px 32px;
-text-decoration: none;
-display: inline-block;
-font-size: 16px;
-margin: 4px 2px;
-cursor: pointer;
+.selectMode * {
+  color:black;
+}
+
+.selectMode > * {
+  margin-left: 10px;
+  margin-right: 10px;
+  color: black;
+  font-size: 16px;
+  text-align: left;
+  flex-grow: 0.1;
+  flex-basis: 0;
+}
+
+::placeholder {
+  opacity: 1;
+  color:black;
+}
+
+.modeSelected {
+  background-color: yellow;
+}
+
+.modeUnselected {
+  background-color: rgb(255, 93, 43);
+}
+
+.react-dropdown-select-item {
+  background-color: rgb(228, 180, 23);
+  border-color: black;
 }

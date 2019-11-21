@@ -1,0 +1,5 @@
+{
+    "tableName": "thermostatState",
+    "partitionKeyName": "since",
+    "partitionKeyType": "N"
+}

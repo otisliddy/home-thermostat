@@ -4,11 +4,13 @@
   "private": true,
   "dependencies": {
     "@aws-amplify/api": "^1.2.2",
+    "@aws-amplify/cli": "^3.17.0",
     "@aws-amplify/pubsub": "^1.2.2",
     "aws-amplify": "^1.2.4",
     "aws-amplify-react": "^2.5.2",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
+    "react-dropdown-select": "^3.6.5",
     "react-scripts": "3.2.0",
     "uuid": "^3.3.3"
   },

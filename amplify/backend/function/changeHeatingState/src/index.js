@@ -5,22 +5,24 @@ var region = process.env.REGION
 
 Amplify Params - DO NOT EDIT */
 
-const { Client } = require('node-rest-client');
+const Client = require('node-rest-client').Client;
 const client = new Client();
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
-
+const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
 exports.handler = function (event, context) {
+  console.log('Payload: ', event);
   const action = event.action;
-  console.log(`Action = ${action}`);
 
-  if (action !== null) {
-    thingSpeak(thingSpeakModeWriteUrl + action, (response) => context.done(null, 'Successfully changed state ' + response) );
+  if (action === '0' || action === '1') {
+    thingSpeak(thingSpeakModeWriteUrl + action, (res) => context.done(null, 'Changed mode successfully') );
+  } else if (action === '2') {
+    thingSpeak(thingSpeakControlTempUrl + event.temp, (res) => context.done(null, 'Changed fixed temp successfully' + res));
   }
-};
+}
 
 function thingSpeak(url, callback) {
-  getWithRetry(url, callback, 40);
+  getWithRetry(url, callback, 60);
 }
 
 function getWithRetry(url, callback, n) {
