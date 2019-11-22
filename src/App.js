@@ -110,11 +110,12 @@ class TempDisplay extends Component {
 
   componentDidMount() {
     fetch(weatherApiUrl).then(res => res.json()).then((data) => {
-      const tempCelsius = Math.round(data.main.temp - 273.15);
+      const tempCelsius = Math.round((data.main.temp - 273.15) * 2) / 2;
       this.setState({ tempOutside: tempCelsius });
     });
     thingSpeak(thingSpeakTempUrl, (res) => {
-      this.setState({ tempInside: res.field1 });
+      const tempRounded = Math.round(res.field1 * 10) / 10;
+      this.setState({ tempInside: tempRounded });
     });
   }
 
@@ -216,10 +217,10 @@ class App extends Component {
   }
 
   render() {
+    //<Status status={this.state.status} />
     return (
       <div>
         <TempDisplay />
-        <Status status={this.state.status} />
         <SelectMode currentMode={this.state.status.mode}
           handleOn={this.handleOn.bind(this)}
           handleOff={this.handleOff.bind(this)}

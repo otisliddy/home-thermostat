@@ -4,11 +4,8 @@ const StepFunctions = require('aws-sdk/clients/stepfunctions');
 const uuidv4 = require('uuid');
 
 const stateMachineArn = 'arn:aws:states:eu-west-1:056402289766:stateMachine:HomeThermostatStateMachine';
-//const accessKeyId = 'AKIAQ2IOWURTEDHC7RWE';
-//const secretAccessKey = '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';
 
 AWS.config.region = 'eu-west-1';
-//AWS.config.credentials = new AWS.Credentials(accessKeyId, secretAccessKey);
 
 const stepFunctions = new StepFunctions({ apiVersion: '2016-11-23' });
 

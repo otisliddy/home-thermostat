@@ -19,6 +19,7 @@ body {
 .selectMode {
   display: flex;
   justify-content: center;
+  margin-top: 50px;
 }
 
 .selectMode * {
@@ -28,11 +29,12 @@ body {
 .selectMode > * {
   margin-left: 10px;
   margin-right: 10px;
+  width: 90px;
   color: black;
   font-size: 16px;
   text-align: left;
   flex-grow: 0.1;
-  flex-basis: 0;
+  flex-basis: auto; /* default value */
 }
 
 ::placeholder {
