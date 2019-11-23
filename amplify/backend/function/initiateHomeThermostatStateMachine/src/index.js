@@ -4,10 +4,8 @@ const StepFunctions = require('aws-sdk/clients/stepfunctions');
 const uuidv4 = require('uuid');
 
 const stateMachineArn = 'arn:aws:states:eu-west-1:056402289766:stateMachine:HomeThermostatStateMachine';
-
-AWS.config.region = 'eu-west-1';
-
 const stepFunctions = new StepFunctions({ apiVersion: '2016-11-23' });
+AWS.config.region = 'eu-west-1';
 
 exports.handler = function (event, context) {
   console.log('Event: ', event);

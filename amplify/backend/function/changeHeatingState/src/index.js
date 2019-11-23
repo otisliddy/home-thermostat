@@ -1,10 +1,3 @@
-/* Amplify Params - DO NOT EDIT
-You can access the following resource attributes as environment variables from your Lambda function
-var environment = process.env.ENV
-var region = process.env.REGION
-
-Amplify Params - DO NOT EDIT */
-
 const Client = require('node-rest-client').Client;
 const client = new Client();
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
@@ -25,16 +18,16 @@ function thingSpeak(url, callback) {
   getWithRetry(url, callback, 60);
 }
 
-function getWithRetry(url, callback, n) {
+function getWithRetry(url, callback, maxRetries) {
   return new Promise(function (resolve, reject) {
     client.get(url, async (data, res) => {
       if (String(data) !== '0') {
         callback(data);
         resolve(data);
       } else {
-        if (n === 1) return reject('Max retries reached');
+        if (maxRetries === 1) return reject('Max retries reached');
         await sleep(1000);
-        getWithRetry(url, callback, n - 1);
+        getWithRetry(url, callback, maxRetries - 1);
       }
     });
   });
