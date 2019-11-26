@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Mode from './mode';
+import modes from '../constants/constants';
 
 const durationOptions = [
     { label: '0:15', value: 15 * 60 },
@@ -21,16 +22,16 @@ for (var i = 10; i < 25; i++) {
 class SelectMode extends Component {
     render() {
         const disabled = !/^(Off|On|Fixed Temp)$/.test(this.props.currentMode);
-        const offBtnClass = 'Off' === this.props.currentMode ? 'modeSelected' : 'modeUnselected';
+        const offBtnClass = modes.OFF.val === this.props.currentMode ? 'modeSelected' : 'modeUnselected';
         return (
             <div className='selectMode'>
-                <Mode mode='Schedule' currentMode={this.props.currentMode} disabled={disabled}
+                <Mode mode={modes.SCHEDULE.val} currentMode={this.props.currentMode} disabled={disabled}
                     onChange={this.props.handleSchedule} />
-                <Mode mode='Fixed Temp' currentMode={this.props.currentMode} options={tempOptions} disabled={disabled}
+                <Mode mode={modes.FIXED_TEMP.val} currentMode={this.props.currentMode} options={tempOptions} disabled={disabled}
                     onChange={this.props.handleFixedTemp} />
-                <Mode mode='On' currentMode={this.props.currentMode} options={durationOptions} disabled={disabled}
+                <Mode mode={modes.ON.val} currentMode={this.props.currentMode} options={durationOptions} disabled={disabled}
                     onChange={this.props.handleOn} />
-                <button className={offBtnClass} onClick={this.props.handleOff} disabled={disabled}>Off</button>
+                <button className={offBtnClass} onClick={this.props.handleOff} disabled={disabled}>{modes.OFF.val}</button>
             </div>
         );
     }
