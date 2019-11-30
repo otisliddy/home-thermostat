@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import Mode from './mode';
-import modes from '../constants/constants';
+import { modes } from 'home-thermostat-common';
 
 const durationOptions = [
     { label: '0:15', value: 15 * 60 },

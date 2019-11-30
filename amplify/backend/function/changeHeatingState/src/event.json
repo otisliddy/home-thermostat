@@ -1,4 +1,5 @@
 {
-    "action": "2",
-    "temp": "23"
+    "action": "0",
+    "waitSeconds": "30",
+    "temp": "9"
 }

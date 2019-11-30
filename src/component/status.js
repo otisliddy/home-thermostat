@@ -1,15 +1,22 @@
 import React, { Component } from 'react';
-import modes from '../constants/constants';
 import dateformat from 'dateformat';
+import { modes } from 'home-thermostat-common';
 
 class Status extends Component {
   render() {
     let status = this.props.status.mode;
 
     Object.keys(modes).forEach((mode) => {
-      if (modes[mode].val === this.props.status.mode) {
+      if (modes[mode].val === this.props.status.mode && this.props.status.since) {
+        if (this.props.status.fixedTemp) {
+          status += ` at ${this.props.status.fixedTemp}°`;
+        }
         status += ` since ${toFormattedDate(this.props.status.since)}`;
-        status += ` (${generateAgoString(this.props.status.since)} ago)`;
+        status += ` (${generateTimeDiffText(this.props.status.since)})`;
+        if (this.props.status.until) {
+          status += ` until ${toFormattedDate(this.props.status.until)}`;
+          status += ` (${generateTimeDiffText(this.props.status.until)})`;
+        }
       };
     });
 
@@ -39,34 +46,37 @@ function toFormattedDate(dateMillis) {
   }
 }
 
-function generateAgoString(dateMillis) {
-  let agoString = '';
+function generateTimeDiffText(dateMillis) {
+  let diffText = '';
   let leadingSpace = '';
   const date = new Date(dateMillis);
-  let secondsAgo = (new Date().getTime() - date.getTime()) / 1000;
-  if (secondsAgo > 3600 * 24) {
-    const days = Math.floor(secondsAgo / (3600 * 24));
-    secondsAgo -= days * 3600 * 24;
+  let secondsDiff = Math.abs((new Date().getTime() - date.getTime()) / 1000);
+  if (secondsDiff > 3600 * 24) {
+    const days = Math.floor(secondsDiff / (3600 * 24));
+    secondsDiff -= days * 3600 * 24;
     leadingSpace = ' ';
-    agoString += days === 1 ? `${days} day` : `${days} days`;
+    diffText += days === 1 ? `${days} day` : `${days} days`;
   }
-  if (secondsAgo > 3600) {
-    const hours = Math.floor(secondsAgo / (3600));
-    secondsAgo -= hours * 3600;
-    agoString += leadingSpace;
+  if (secondsDiff > 3600) {
+    const hours = Math.floor(secondsDiff / (3600));
+    secondsDiff -= hours * 3600;
+    diffText += leadingSpace;
     leadingSpace = ' ';
-    agoString += hours === 1 ? `${hours} hour` : `${hours} hours`;
+    diffText += hours === 1 ? `${hours} hour` : `${hours} hours`;
   }
-  if (secondsAgo > 60) {
-    const mins = Math.floor(secondsAgo / (60));
-    secondsAgo -= mins * 60;
-    agoString += leadingSpace;
-    agoString += mins === 1 ? `${mins} minute` : `${mins} minutes`;
+  if (secondsDiff > 60) {
+    const mins = Math.floor(secondsDiff / (60));
+    secondsDiff -= mins * 60;
+    diffText += leadingSpace;
+    diffText += mins === 1 ? `${mins} minute` : `${mins} minutes`;
   }
-  if (agoString === '') {
-    agoString = 'less than one minute';
+  if (diffText === '') {
+    diffText = 'less than one minute';
   }
-  return agoString;
+  if (date < new Date()) {
+    diffText += ' ago';
+  }
+  return diffText;
 }
 
 export default Status;

@@ -1,17 +1,16 @@
 import React, { Component } from 'react';
-import AWS from 'aws-sdk';
 import TempDisplay from './component/temp-display';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
 import thingSpeak from './rest/rest-handler';
-import modes from './constants/constants';
+import { modes, dynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
 
 /*TODO: - convert components to functional components
 - convert text modes to images
-- create enum for modes
 - auto-fill durationOptions
-- Write unit tests for generateAgoString
+- Write unit tests for generateAgoString,findStatusConsideringDuplicates
 - Create fallback structure when getting status from thingspeak
+- sync status immediately after setting
 */
 
 const thingSpeakModeUrl = 'https://api.thingspeak.com/channels/879596/fields/2/last.json';
@@ -20,17 +19,8 @@ const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNN
 
 // Have to use a proxyLambda because can't invoke StepFunctions directly: https://forums.aws.amazon.com/thread.jspa?threadID=248225
 const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiate-home-thermostat-state-machine-test';
-const stateDynamoTable = 'thermostatState-test';
 
-const identityPoolId = 'eu-west-1:12319816-c5b9-4593-8dae-129cfab87abf';
-AWS.config.region = 'eu-west-1';
-AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-  IdentityPoolId: identityPoolId,
-});
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
-const dynamodb = new AWS.DynamoDB();
-
-
 
 class App extends Component {
   constructor(props) {
@@ -39,35 +29,25 @@ class App extends Component {
   }
 
   componentDidMount() {
-    const params = {
-      TableName: stateDynamoTable
-    }
 
-    dynamodb.scan(params, (err, data) => {
-      if (err) {
-        console.error(err, err.stack);
-      } else {
-        const items = data.Items;
-        const itemsSorted = items.sort((a, b) => (a.since.N < b.since.N) ? 1 : -1);
-        this.setState({ status: dynamoItemToStatus(itemsSorted[0]) });
+    dynamodbClient.scan().then((status) => {
+      this.setState({ status: status });
 
-        thingSpeak(thingSpeakModeUrl, (res) => {
-          const fieldVal = res.field2
-          const mode = fieldVal === '0' ? 'Off' : fieldVal === '1' ? 'On' : 'Fixed Temp';
+      thingSpeak(thingSpeakModeUrl, (res) => {
+        const fieldVal = res.field2
+        const mode = fieldVal === '0' ? 'Off' : fieldVal === '1' ? 'On' : 'Fixed Temp';
 
-          if (mode !== this.state.status.mode) {
-            alert('Let Otis know that error 13 occurred');
-            this.setState({ status: { mode: mode } });
-            if (mode === 'Fixed Temp') {
-              thingSpeak(thingSpeakControlTempUrl, (res) => {
-                console.log(res.field3);
-                this.setState({ status: { mode: mode, fixedTemp: res.field3 } });
-              })
-            }
+        //todo handle "off for at least two weeks"
+        if (mode !== status.mode) {
+          alert('Let Otis know that error 13 occurred');
+          this.setState({ status: { mode: mode } });
+          if (mode === 'Fixed Temp') {
+            thingSpeak(thingSpeakControlTempUrl, (res) => {
+              this.setState({ status: { mode: mode, fixedTemp: res.field3 } });
+            })
           }
-        });
-
-      }
+        }
+      });
     });
   }
 
@@ -86,7 +66,8 @@ class App extends Component {
     this.setState({ status: { mode: 'Setting fixed temp...' } });
     lambda.invoke(params, function (error) {
       if (!error) {
-        this.updateStatus(modes.FIXED_TEMP.val, { fixedTemp: temp });
+        const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: temp });
+        this.setState({ status: status });
       } else {
         console.log(error, error.stack);
       }
@@ -104,7 +85,10 @@ class App extends Component {
     this.setState({ status: { mode: 'Turning on...' } });
     lambda.invoke(params, function (error) {
       if (!error) {
-        thingSpeak(thingSpeakModeWriteUrl + '1', () => this.updateStatus(modes.ON.val, { timeSeconds: timeSeconds }));
+        thingSpeak(thingSpeakModeWriteUrl + '1', () => {
+          const status = statusHelper.createStatus(modes.ON, { timeSeconds: timeSeconds });
+          this.setState({ status: status });
+        });
       } else {
         console.log(error, error.stack);
       }
@@ -113,7 +97,6 @@ class App extends Component {
 
   handleOff() {
     console.log('Turning off');
-    this.updateStatus(modes.OFF.val, { timeSeconds: 900 });
     var params = {
       FunctionName: initiateWorkflowLambdaArn,
       Payload: `{"waitSeconds": "0", "action": "${modes.OFF.ordinal}"}`
@@ -122,29 +105,12 @@ class App extends Component {
     this.setState({ status: { mode: 'Turning off...' } });
     lambda.invoke(params, function (error) {
       if (!error) {
-        this.updateStatus(modes.OFF.val);
+        const status = statusHelper.createStatus(modes.OFF);
+        this.setState({ status: status });
       } else {
         console.log(error, error.stack);
       }
     }.bind(this));
-  }
-
-  updateStatus(mode, options) {
-    const status = { mode: mode };
-    status.since = new Date().getTime();
-
-    if (options && options.timeSeconds) {
-      const until = new Date(status.since);
-      until.setSeconds(until.getSeconds() + options.timeSeconds);
-      status.until = until.getTime();
-    }
-
-    if (options && options.fixedTemp) {
-      status.fixedTemp = options.fixedTemp;
-    }
-
-    this.setState({ status: status });
-    insertStatus(status);
   }
 
   render() {
@@ -160,49 +126,6 @@ class App extends Component {
       </div>
     );
   }
-}
-
-function insertStatus(status) {
-  const params = {
-    TableName: stateDynamoTable,
-    Item: statusToDynamoItem(status),
-  };
-
-  dynamodb.putItem(params, (err, data) => {
-    if (err) {
-      alert('Let otis know that error 14 occurred')
-      console.error("Unable to add. Error JSON:", JSON.stringify(err, null, 2));
-    }
-  });
-
-}
-
-function dynamoItemToStatus(dynamoItem) {
-  const status = {};
-  for (const key in dynamoItem) {
-    if (dynamoItem.hasOwnProperty(key)) {
-      if (dynamoItem[key].N) {
-        status[key] = parseInt(dynamoItem[key]['N']);
-      } else {
-        status[key] = dynamoItem[key]['S'];
-      }
-    }
-  }
-  return status;
-}
-
-function statusToDynamoItem(status) {
-  const item = {};
-  for (const key in status) {
-    if (status.hasOwnProperty(key)) {
-      if (isNaN(status[key])) {
-        item[key] = { S: status[key] }
-      } else {
-        item[key] = { N: status[key].toString() }
-      }
-    }
-  }
-  return item;
 }
 
 export default App;

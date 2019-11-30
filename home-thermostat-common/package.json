@@ -1,0 +1,16 @@
+{
+  "name": "home-thermostat-common",
+  "version": "1.0.0",
+  "description": "Anything used is a candidate to be used by both backend and frontend in this repo",
+  "main": "index.js",
+  "scripts": {
+    "build": "sh copy_module.sh",
+    "test": "_mocha 'test/*.test.js'"
+  },
+  "author": "otisliddy",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "*",
+    "mocha": "*"
+  }
+}

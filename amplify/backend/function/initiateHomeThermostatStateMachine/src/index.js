@@ -48,7 +48,7 @@ function startNewExecution(event, context) {
   return new Promise((resolve, reject) => {
     const params = {
       stateMachineArn: stateMachineArn,
-      input: JSON.stringify(event), //TODO use json.stringify
+      input: JSON.stringify(event),
       name: 'ScheduleHeatChange-' + uuidv4(),
     };
     console.log('Params:', params);

@@ -1,4 +1,6 @@
+const { modes, dynamodbClient, statusHelper } = require('./home-thermostat-common');
 const Client = require('node-rest-client').Client;
+
 const client = new Client();
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
@@ -7,10 +9,24 @@ exports.handler = function (event, context) {
   console.log('Payload: ', event);
   const action = event.action;
 
-  if (action === '0' || action === '1') {
-    thingSpeak(thingSpeakModeWriteUrl + action, (res) => context.done(null, 'Changed mode successfully') );
-  } else if (action === '2') {
-    thingSpeak(thingSpeakControlTempUrl + event.temp, (res) => context.done(null, 'Changed fixed temp successfully' + res));
+  if (action === modes.OFF.ordinal || action === modes.ON.ordinal) {
+    thingSpeak(thingSpeakModeWriteUrl + action, (res) => {
+      if (action === modes.OFF.ordinal) {
+        const status = statusHelper.createStatus(modes.OFF);
+        dynamodbClient.insertStatus(status)
+          .then(() => context.done(null, 'Turned off successfully ' + res));
+      } else {
+        const status = statusHelper.createStatus(modes.ON, { timeSeconds: event.waitSeconds });
+        dynamodbClient.insertStatus(status)
+          .then(() => context.done(null, 'Turned on successfully ' + res));
+      }
+    });
+  } else if (action === modes.FIXED_TEMP.ordinal) {
+    thingSpeak(thingSpeakControlTempUrl + event.temp, (res) => {
+      const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: event.temp });
+      dynamodbClient.insertStatus(status)
+        .then(() => context.done(null, 'Changed fixed temp successfully ' + res));
+    });
   }
 }
 

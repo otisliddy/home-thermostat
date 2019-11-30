@@ -75,8 +75,11 @@
                             ]
                         }
                     ]
+                },
+                "TimeToLiveSpecification": {
+                    "AttributeName" : "expireAt",
+                    "Enabled" : true
                 }
-                
             }
         }
     },

@@ -5,4 +5,4 @@ const modes = {
     OFF: { val: 'Off', ordinal: '0' },
 }
 
-export default modes;
+module.exports = modes;
