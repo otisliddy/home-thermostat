@@ -3,7 +3,7 @@ import TempDisplay from './component/temp-display';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
 import thingSpeak from './rest/rest-handler';
-import { modes, dynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
+import { modes, DynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
 
 /*TODO: - convert components to functional components
 - convert text modes to images
@@ -11,16 +11,19 @@ import { modes, dynamodbClient, AWS, statusHelper } from 'home-thermostat-common
 - Write unit tests for generateAgoString,findStatusConsideringDuplicates
 - Create fallback structure when getting status from thingspeak
 - sync status immediately after setting
+- Don't package dev dependencies in home-thermostat common
 */
 
 const thingSpeakModeUrl = 'https://api.thingspeak.com/channels/879596/fields/2/last.json';
 const thingSpeakControlTempUrl = 'https://api.thingspeak.com/channels/879596/fields/3/last.json';
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
+const thingSpeakWriteControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
 // Have to use a proxyLambda because can't invoke StepFunctions directly: https://forums.aws.amazon.com/thread.jspa?threadID=248225
 const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiate-home-thermostat-state-machine-test';
 
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
+const dynamodbClient = new DynamodbClient();
 
 class App extends Component {
   constructor(props) {
@@ -30,15 +33,19 @@ class App extends Component {
 
   componentDidMount() {
 
-    dynamodbClient.scan().then((status) => {
-      this.setState({ status: status });
+    dynamodbClient.scan().then((statuses) => {
+      if (statuses.length === 0) {
+        return this.setState({ status: { mode: modes.OFF.val } });
+      }
+
+      this.setState({ status: statuses[0] });
 
       thingSpeak(thingSpeakModeUrl, (res) => {
         const fieldVal = res.field2
         const mode = fieldVal === '0' ? 'Off' : fieldVal === '1' ? 'On' : 'Fixed Temp';
 
         //todo handle "off for at least two weeks"
-        if (mode !== status.mode) {
+        if (mode !== statuses[0].mode) {
           alert('Let Otis know that error 13 occurred');
           this.setState({ status: { mode: mode } });
           if (mode === 'Fixed Temp') {
@@ -58,20 +65,12 @@ class App extends Component {
   handleFixedTemp(selectedTemp) {
     console.log('Changing to fixed temp');
     const temp = selectedTemp[0].value;
-    var params = {
-      FunctionName: initiateWorkflowLambdaArn,
-      Payload: `{"waitSeconds": "0", "action": "${modes.FIXED_TEMP.ordinal}", "temp": "${temp}"}` //TODO use json.stringify
-    };
-
-    this.setState({ status: { mode: 'Setting fixed temp...' } });
-    lambda.invoke(params, function (error) {
-      if (!error) {
-        const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: temp });
+    thingSpeak(thingSpeakWriteControlTempUrl + modes.FIXED_TEMP.ordinal, () => {
+      const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: temp });
+      dynamodbClient.insertStatus(status).then(() => {
         this.setState({ status: status });
-      } else {
-        console.log(error, error.stack);
-      }
-    }.bind(this));
+      });
+    });
   }
 
   handleOn(selectedDuration) {
@@ -85,9 +84,11 @@ class App extends Component {
     this.setState({ status: { mode: 'Turning on...' } });
     lambda.invoke(params, function (error) {
       if (!error) {
-        thingSpeak(thingSpeakModeWriteUrl + '1', () => {
+        thingSpeak(thingSpeakModeWriteUrl + modes.ON.ordinal, () => {
           const status = statusHelper.createStatus(modes.ON, { timeSeconds: timeSeconds });
-          this.setState({ status: status });
+          dynamodbClient.insertStatus(status).then(() => {
+            this.setState({ status: status });
+          });
         });
       } else {
         console.log(error, error.stack);
@@ -97,20 +98,12 @@ class App extends Component {
 
   handleOff() {
     console.log('Turning off');
-    var params = {
-      FunctionName: initiateWorkflowLambdaArn,
-      Payload: `{"waitSeconds": "0", "action": "${modes.OFF.ordinal}"}`
-    };
-
-    this.setState({ status: { mode: 'Turning off...' } });
-    lambda.invoke(params, function (error) {
-      if (!error) {
-        const status = statusHelper.createStatus(modes.OFF);
+    thingSpeak(thingSpeakModeWriteUrl + modes.OFF.ordinal, () => {
+      const status = statusHelper.createStatus(modes.OFF);
+      dynamodbClient.insertStatus(status).then(() => {
         this.setState({ status: status });
-      } else {
-        console.log(error, error.stack);
-      }
-    }.bind(this));
+      });
+    });
   }
 
   render() {
