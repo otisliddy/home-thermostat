@@ -2,13 +2,14 @@ import React, { Component } from 'react';
 import TempDisplay from './component/temp-display';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
+import RecentActivity from './component/recent-activity';
 import thingSpeak from './rest/rest-handler';
 import { modes, DynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
 
 /*TODO: - convert components to functional components
 - convert text modes to images
 - auto-fill durationOptions
-- Write unit tests for generateAgoString,findStatusConsideringDuplicates
+- Write unit tests for generateAgoString
 - Create fallback structure when getting status from thingspeak
 - sync status immediately after setting
 - Don't package dev dependencies in home-thermostat common
@@ -38,13 +39,12 @@ class App extends Component {
         return this.setState({ status: { mode: modes.OFF.val } });
       }
 
-      this.setState({ status: statuses[0] });
+      this.setState({ status: statuses[0], statuses: statuses });
 
       thingSpeak(thingSpeakModeUrl, (res) => {
         const fieldVal = res.field2
         const mode = fieldVal === '0' ? 'Off' : fieldVal === '1' ? 'On' : 'Fixed Temp';
 
-        //todo handle "off for at least two weeks"
         if (mode !== statuses[0].mode) {
           alert('Let Otis know that error 13 occurred');
           this.setState({ status: { mode: mode } });
@@ -111,6 +111,8 @@ class App extends Component {
       <div>
         <TempDisplay />
         <Status status={this.state.status} />
+        <br />
+        <RecentActivity statuses={this.state.statuses} />
         <SelectMode currentMode={this.state.status.mode}
           handleOn={this.handleOn.bind(this)}
           handleOff={this.handleOff.bind(this)}

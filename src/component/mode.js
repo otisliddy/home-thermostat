@@ -20,7 +20,7 @@ class Mode extends Component {
         const modeClass = this.props.mode === this.props.currentMode ? 'modeSelected' : 'modeUnselected';
         return (
             <Select className={modeClass} ref={this._child}
-                options={this.props.options} values={[]} color={'pink'}
+                options={this.props.options} values={[]}
                 dropdownHandle={false} searchable={false} placeholder={this.props.mode} disabled={this.props.disabled}
                 onChange={(value) => { this.handleChange(value) }}
             />

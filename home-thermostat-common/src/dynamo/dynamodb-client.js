@@ -1,5 +1,4 @@
 
-const modes = require('../constants/modes');
 const AWS = require('../config/aws-config');
 
 const stateTableName = 'thermostatState-test';
@@ -22,7 +21,6 @@ class DynamodbClient {
                 if (err) {
                     reject(err);
                 } else {
-                    console.log(data);
                     const items = data.Items;
                     const itemsSorted = items.sort((a, b) => (parseInt(a.since.N) < parseInt(b.since.N)) ? 1 : -1);
                     resolve(findStatusesConsideringDuplicates(itemsSorted));

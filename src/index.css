@@ -8,6 +8,16 @@ body {
   text-align: center;
 }
 
+.react-dropdown-select-item {
+  background-color: rgb(228, 180, 23);
+  border-color: black;
+}
+
+::placeholder {
+  opacity: 1;
+  color:black;
+}
+
 .tempDisplay {
   padding: 10px;
 }
@@ -15,6 +25,31 @@ body {
 .status {
   padding: 10px;
 }
+
+.activityDropdown {
+  background-color: #263238;
+}
+
+.activityTable{
+  margin-left: auto;
+  margin-right: auto;
+}
+
+tr {
+  border: solid;
+  border-width: 1px 0;
+}
+
+tr td {
+  padding: 8px 0;
+  text-align: left;
+}
+
+table tr td:empty {
+  width: 30px;
+}
+
+/* Select Mode */
 
 .selectMode {
   display: flex;
@@ -37,20 +72,10 @@ body {
   flex-basis: auto; /* default value */
 }
 
-::placeholder {
-  opacity: 1;
-  color:black;
-}
-
 .modeSelected {
   background-color: yellow;
 }
 
 .modeUnselected {
   background-color: rgb(255, 93, 43);
-}
-
-.react-dropdown-select-item {
-  background-color: rgb(228, 180, 23);
-  border-color: black;
 }
