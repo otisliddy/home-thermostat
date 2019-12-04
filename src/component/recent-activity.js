@@ -20,22 +20,8 @@ class RecentActivity extends Component {
         if (this.props.statuses) {
             for (let i = 0; i < this.props.statuses.length - 1; i++) {
                 const status = this.props.statuses[i];
-                if (status.since > sinceDaysAgo) {
-                    let until = '';
-                    if (status.until) {
-                        until = ' to ' + toFormattedDate(status.until);
-                    }
-
-                    let mode = status.mode;
-                    if (status.fixedTemp) {
-                        mode += ` at ${status.fixedTemp}°`;
-                    }
-                    rows.push(
-                        <tr>
-                            <td>{toFormattedDate(status.since)}{until}</td><td/><td>{mode}</td>
-                        </tr>
-                    )
-                } else {
+                this.addStatusRow(status, rows);
+                if (status.since < sinceDaysAgo) {
                     break;
                 }
             }
@@ -54,12 +40,26 @@ class RecentActivity extends Component {
                     <option value='14'>14</option>
                     <option value='30'>30</option>
                 </select>
-                <label>&nbsp; days:</label>
+                <label>&nbsp; days</label>
                 <table className='activityTable' >
                     <tbody>{rows}</tbody>
                 </table>
             </div>
         )
+    }
+
+    addStatusRow(status, rows) {
+        let until = '';
+        if (status.until) {
+            until = ' to ' + toFormattedDate(status.until);
+        }
+        let mode = status.mode;
+        if (status.fixedTemp) {
+            mode += ` at ${status.fixedTemp}°`;
+        }
+        rows.push(<tr>
+            <td>{toFormattedDate(status.since)}{until}</td><td /><td>{mode}</td>
+        </tr>);
     }
 }
 
