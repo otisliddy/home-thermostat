@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import dateformat from 'dateformat';
+import { modes } from 'home-thermostat-common';
+import { toFormattedDate } from '../utils/time-helper';
 
 class RecentActivity extends Component {
     constructor(props) {
@@ -17,10 +18,15 @@ class RecentActivity extends Component {
         const sinceDaysAgo = new Date();
         sinceDaysAgo.setTime(sinceDaysAgo.getTime() - this.state.days * 3600 * 24 * 1000);
 
+        console.log(this.props.statuses);
+
         if (this.props.statuses) {
-            for (let i = 0; i < this.props.statuses.length - 1; i++) {
+            for (let i = 0; i < this.props.statuses.length; i++) {
                 const status = this.props.statuses[i];
-                this.addStatusRow(status, rows);
+                if (status.mode !== modes.OFF.val) {
+                    const nextStatus = i > 0 ? this.props.statuses[i - 1] : null;
+                    this.addStatusRow(status, nextStatus, rows);
+                }
                 if (status.since < sinceDaysAgo) {
                     break;
                 }
@@ -48,29 +54,21 @@ class RecentActivity extends Component {
         )
     }
 
-    addStatusRow(status, rows) {
+    addStatusRow(status, nextStatus, rows) {
         let until = '';
-        if (status.until) {
-            until = ' to ' + toFormattedDate(status.until);
+        if (status.until && (!nextStatus || status.until < nextStatus.since)) {
+            until = toFormattedDate(status.until);
+        } else {
+            until = toFormattedDate(nextStatus.since);
         }
+
         let mode = status.mode;
         if (status.fixedTemp) {
             mode += ` at ${status.fixedTemp}°`;
         }
         rows.push(<tr>
-            <td>{toFormattedDate(status.since)}{until}</td><td /><td>{mode}</td>
+            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activityMode'>{mode}</td>
         </tr>);
-    }
-}
-
-function toFormattedDate(dateMillis) {
-    const date = new Date(dateMillis);
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    if (date < oneDayAgo) {
-        return dateformat(date, "dd mmm HH:MM");
-    } else {
-        return dateformat(date, "HH:MM");
     }
 }
 

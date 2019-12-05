@@ -110,14 +110,16 @@ class App extends Component {
     return (
       <div>
         <TempDisplay />
-        <Status status={this.state.status} />
         <br />
-        <RecentActivity statuses={this.state.statuses} />
+        <Status status={this.state.status} />
         <SelectMode currentMode={this.state.status.mode}
           handleOn={this.handleOn.bind(this)}
           handleOff={this.handleOff.bind(this)}
           handleFixedTemp={this.handleFixedTemp.bind(this)}
           handleSchedule={this.handleSchedule.bind(this)} />
+        <br />
+        <br />
+        <RecentActivity statuses={this.state.statuses} />
       </div>
     );
   }

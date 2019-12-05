@@ -1,82 +1,33 @@
 import React, { Component } from 'react';
-import dateformat from 'dateformat';
 import { modes } from 'home-thermostat-common';
+import { toFormattedDate, generateTimeDiffText } from '../utils/time-helper';
 
 class Status extends Component {
   render() {
-    let status = this.props.status.mode;
+    let mode = this.props.status.mode;
+    let since = '';
 
     Object.keys(modes).forEach((mode) => {
       if (modes[mode].val === this.props.status.mode && this.props.status.since) {
         if (this.props.status.fixedTemp) {
-          status += ` at ${this.props.status.fixedTemp}°`;
+          mode += ` at ${this.props.status.fixedTemp}°`;
         }
-        status += ` since ${toFormattedDate(this.props.status.since)}`;
-        status += ` (${generateTimeDiffText(this.props.status.since)})`;
+        since += `since ${toFormattedDate(this.props.status.since)}`;
+        since += ` (${generateTimeDiffText(this.props.status.since)})`;
         if (this.props.status.until) {
-          status += ` until ${toFormattedDate(this.props.status.until)}`;
-          status += ` (${generateTimeDiffText(this.props.status.until)})`;
+          since += ` until ${toFormattedDate(this.props.status.until)}`;
+          since += ` (${generateTimeDiffText(this.props.status.until)})`;
         }
       };
     });
 
-    switch (this.props.status.mode) {
-      case (modes.FIXED_TEMP.val):
-        break;
-      default:
-    }
-
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 8);
-
     return (
-      <div className='status'>Status: {status}</div>
+      <div className='status'>
+        <div className='mode'>Status: {mode}</div>
+        <div className='since'>{since}</div>
+      </div>
     );
   }
-}
-
-function toFormattedDate(dateMillis) {
-  const date = new Date(dateMillis);
-  const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-  if (date < oneDayAgo) {
-    return dateformat(date, "dd mmm HH:MM");
-  } else {
-    return dateformat(date, "HH:MM");
-  }
-}
-
-function generateTimeDiffText(dateMillis) {
-  let diffText = '';
-  let leadingSpace = '';
-  const date = new Date(dateMillis);
-  let secondsDiff = Math.abs((new Date().getTime() - date.getTime()) / 1000);
-  if (secondsDiff > 3600 * 24) {
-    const days = Math.floor(secondsDiff / (3600 * 24));
-    secondsDiff -= days * 3600 * 24;
-    leadingSpace = ' ';
-    diffText += days === 1 ? `${days} day` : `${days} days`;
-  }
-  if (secondsDiff > 3600) {
-    const hours = Math.floor(secondsDiff / (3600));
-    secondsDiff -= hours * 3600;
-    diffText += leadingSpace;
-    leadingSpace = ' ';
-    diffText += hours === 1 ? `${hours} hour` : `${hours} hours`;
-  }
-  if (secondsDiff > 60) {
-    const mins = Math.floor(secondsDiff / (60));
-    secondsDiff -= mins * 60;
-    diffText += leadingSpace;
-    diffText += mins === 1 ? `${mins} minute` : `${mins} minutes`;
-  }
-  if (diffText === '') {
-    diffText = 'less than one minute';
-  }
-  if (date < new Date()) {
-    diffText += ' ago';
-  }
-  return diffText;
 }
 
 export default Status;

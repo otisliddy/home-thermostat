@@ -1,6 +1,6 @@
 * {
   color: white;
-  font: 18px "Century Gothic", Futura, sans-serif;
+  font: 16px "Century Gothic", Futura, sans-serif;
 }
 
 body {
@@ -9,8 +9,8 @@ body {
 }
 
 .react-dropdown-select-item {
-  background-color: rgb(228, 180, 23);
   border-color: black;
+  min-height: 40px;
 }
 
 ::placeholder {
@@ -18,35 +18,33 @@ body {
   color:black;
 }
 
+/* Temp Display */
+
 .tempDisplay {
   padding: 10px;
 }
 
-.status {
-  padding: 10px;
+.tempInside {
+  font-size: 36px;
 }
 
-.activityDropdown {
-  background-color: #263238;
+.tempOutside {
+  font-size: 12px;
 }
 
-.activityTable{
-  margin-left: auto;
-  margin-right: auto;
+/* Status */
+
+
+.status * {
+  color: rgb(142, 255, 240);
 }
 
-tr {
-  border: solid;
-  border-width: 1px 0;
+.status .mode{
+  font-size: 24px;
 }
 
-tr td {
-  padding: 8px 0;
-  text-align: left;
-}
-
-table tr td:empty {
-  width: 30px;
+.status .since{
+  font-size: 14px;
 }
 
 /* Select Mode */
@@ -69,13 +67,46 @@ table tr td:empty {
   font-size: 16px;
   text-align: left;
   flex-grow: 0.1;
-  flex-basis: auto; /* default value */
+  min-width: 10px;
 }
 
 .modeSelected {
-  background-color: yellow;
+  background-color: rgb(159, 238, 227);
 }
 
 .modeUnselected {
-  background-color: rgb(255, 93, 43);
+  background-color: rgb(94, 150, 143);
+}
+
+/* Recent Activity */
+
+.activityDropdown {
+  background-color: #263238;
+}
+
+.activityTable{
+  margin-left: auto;
+  margin-right: auto;
+}
+
+tr {
+  border: solid;
+  border-width: 1px 0;
+}
+
+tr * {
+  font-size: 14px;
+}
+
+tr .activityMode {
+  color: rgb(159, 238, 227);
+}
+
+tr td {
+  padding: 8px 0;
+  text-align: left;
+}
+
+table tr td:empty {
+  width: 30px;
 }
