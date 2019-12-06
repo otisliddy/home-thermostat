@@ -4,7 +4,7 @@
   "description": "Anything used is a candidate to be used by both backend and frontend in this repo",
   "main": "index.js",
   "scripts": {
-    "build": "sh copy_module.sh",
+    "build": "sh build.sh",
     "test": "_mocha 'test/*.test.js'"
   },
   "author": "otisliddy",

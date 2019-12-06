@@ -3,16 +3,12 @@ import TempDisplay from './component/temp-display';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
 import RecentActivity from './component/recent-activity';
-import thingSpeak from './rest/rest-handler';
+import thingSpeak from './util/rest-handler';
 import { modes, DynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
 
 /*TODO: - convert components to functional components
-- convert text modes to images
-- auto-fill durationOptions
 - Write unit tests for generateAgoString
-- Create fallback structure when getting status from thingspeak
-- sync status immediately after setting
-- Don't package dev dependencies in home-thermostat common
+- Migrate to AWS IoT
 */
 
 const thingSpeakModeUrl = 'https://api.thingspeak.com/channels/879596/fields/2/last.json';
@@ -33,7 +29,10 @@ class App extends Component {
   }
 
   componentDidMount() {
+    this.syncStatus();
+  }
 
+  syncStatus() {
     dynamodbClient.scan().then((statuses) => {
       if (statuses.length === 0) {
         return this.setState({ status: { mode: modes.OFF.val } });
@@ -43,14 +42,14 @@ class App extends Component {
 
       thingSpeak(thingSpeakModeUrl, (res) => {
         const fieldVal = res.field2
-        const mode = fieldVal === '0' ? 'Off' : fieldVal === '1' ? 'On' : 'Fixed Temp';
+        const mode = modes[Object.keys(modes).find(key => modes[key].ordinal === fieldVal)];
 
-        if (mode !== statuses[0].mode) {
+        if (mode.val !== statuses[0].mode) {
           alert('Let Otis know that error 13 occurred');
-          this.setState({ status: { mode: mode } });
-          if (mode === 'Fixed Temp') {
+          this.setState({ status: { mode: mode.val } });
+          if (mode === modes.FIXED_TEMP) {
             thingSpeak(thingSpeakControlTempUrl, (res) => {
-              this.setState({ status: { mode: mode, fixedTemp: res.field3 } });
+              this.setState({ status: { fixedTemp: res.field3 } });
             })
           }
         }
@@ -64,30 +63,36 @@ class App extends Component {
 
   handleFixedTemp(selectedTemp) {
     console.log('Changing to fixed temp');
+    this.setState({status: {mode:'Changing to Fixed Temp...'}})
+    
     const temp = selectedTemp[0].value;
     thingSpeak(thingSpeakWriteControlTempUrl + modes.FIXED_TEMP.ordinal, () => {
       const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: temp });
       dynamodbClient.insertStatus(status).then(() => {
         this.setState({ status: status });
+        this.syncStatus();
       });
     });
   }
 
   handleOn(selectedDuration) {
     console.log('Turning on');
+    this.setState({status: {mode:'Turning Off...'}})
+    
     const timeSeconds = selectedDuration[0].value;
     var params = {
       FunctionName: initiateWorkflowLambdaArn,
       Payload: `{"waitSeconds": "${timeSeconds}", "action": "${modes.OFF.ordinal}"}`
     };
 
-    this.setState({ status: { mode: 'Turning on...' } });
+    this.setState({ status: { mode: 'Turning On...' } });
     lambda.invoke(params, function (error) {
       if (!error) {
         thingSpeak(thingSpeakModeWriteUrl + modes.ON.ordinal, () => {
           const status = statusHelper.createStatus(modes.ON, { timeSeconds: timeSeconds });
           dynamodbClient.insertStatus(status).then(() => {
             this.setState({ status: status });
+            this.syncStatus();
           });
         });
       } else {
@@ -98,10 +103,13 @@ class App extends Component {
 
   handleOff() {
     console.log('Turning off');
+    this.setState({status: {mode:'Turning Off...'}})
+    
     thingSpeak(thingSpeakModeWriteUrl + modes.OFF.ordinal, () => {
       const status = statusHelper.createStatus(modes.OFF);
       dynamodbClient.insertStatus(status).then(() => {
         this.setState({ status: status });
+        this.syncStatus();
       });
     });
   }

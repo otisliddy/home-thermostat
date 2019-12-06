@@ -1,21 +1,29 @@
+:root {
+  --color-background: #17252A;
+  --color-font: #FEFFFF;
+  --color-status: #8efff0;
+  --color-mode-selected: #8efff0;
+  --color-mode-unselected: #8ecbc4;
+}
+
 * {
-  color: white;
+  color: var(--color-font);
   font: 16px "Century Gothic", Futura, sans-serif;
 }
 
 body {
-  background-color: #263238;
+  background-color: var(--color-background);
   text-align: center;
 }
 
 .react-dropdown-select-item {
-  border-color: black;
+  border-color: var(--color-background);
   min-height: 40px;
 }
 
 ::placeholder {
   opacity: 1;
-  color:black;
+  color: var(--color-background);
 }
 
 /* Temp Display */
@@ -34,9 +42,8 @@ body {
 
 /* Status */
 
-
 .status * {
-  color: rgb(142, 255, 240);
+  color: var(--color-status);
 }
 
 .status .mode{
@@ -56,32 +63,35 @@ body {
 }
 
 .selectMode * {
-  color:black;
+  color: var(--color-background);
 }
 
 .selectMode > * {
   margin-left: 10px;
   margin-right: 10px;
   width: 90px;
-  color: black;
   font-size: 16px;
   text-align: left;
   flex-grow: 0.1;
   min-width: 10px;
 }
 
+.selectMode > button {
+  color: var(--color-background);
+}
+
 .modeSelected {
-  background-color: rgb(159, 238, 227);
+  background-color: var(--color-mode-selected);
 }
 
 .modeUnselected {
-  background-color: rgb(94, 150, 143);
+  background-color: var(--color-mode-unselected);
 }
 
 /* Recent Activity */
 
 .activityDropdown {
-  background-color: #263238;
+  background-color: var(--color-background);
 }
 
 .activityTable{
@@ -99,7 +109,7 @@ tr * {
 }
 
 tr .activityMode {
-  color: rgb(159, 238, 227);
+  color: var(--color-mode-selected);
 }
 
 tr td {

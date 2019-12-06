@@ -1,6 +1,12 @@
 import React, { Component } from 'react';
 import { modes } from 'home-thermostat-common';
-import { toFormattedDate } from '../utils/time-helper';
+import { toFormattedDate } from '../util/time-helper';
+
+const days = [1, 2, 3, 4, 7, 14, 30];
+const options = []
+days.forEach(day => options.push(
+    <option value={day}>{day}</option>
+))
 
 class RecentActivity extends Component {
     constructor(props) {
@@ -17,8 +23,6 @@ class RecentActivity extends Component {
 
         const sinceDaysAgo = new Date();
         sinceDaysAgo.setTime(sinceDaysAgo.getTime() - this.state.days * 3600 * 24 * 1000);
-
-        console.log(this.props.statuses);
 
         if (this.props.statuses) {
             for (let i = 0; i < this.props.statuses.length; i++) {
@@ -38,13 +42,7 @@ class RecentActivity extends Component {
             <div>
                 <label>Activity last &nbsp;</label>
                 <select className='activityDropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
-                    <option value='1'>1</option>
-                    <option value='2'>2</option>
-                    <option value='3'>3</option>
-                    <option value='4'>4</option>
-                    <option value='7'>7</option>
-                    <option value='14'>14</option>
-                    <option value='30'>30</option>
+                    {options}
                 </select>
                 <label>&nbsp; days</label>
                 <table className='activityTable' >
@@ -56,10 +54,14 @@ class RecentActivity extends Component {
 
     addStatusRow(status, nextStatus, rows) {
         let until = '';
-        if (status.until && (!nextStatus || status.until < nextStatus.since)) {
-            until = toFormattedDate(status.until);
-        } else {
+        if (nextStatus) {
             until = toFormattedDate(nextStatus.since);
+        } else {
+            if (!status.until) {
+                until = toFormattedDate(new Date().getTime());
+            } else {
+                until = toFormattedDate(status.until);
+            }
         }
 
         let mode = status.mode;

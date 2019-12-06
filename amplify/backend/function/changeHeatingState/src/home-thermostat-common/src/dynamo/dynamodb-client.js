@@ -1,50 +1,58 @@
 
-const modes = require('../constants/modes');
 const AWS = require('../config/aws-config');
 
-const dynamodb = new AWS.DynamoDB();
 const stateTableName = 'thermostatState-test';
-const dynamodbClient = {};
 
-dynamodbClient.scan = () => {
-    const params = {
-        TableName: stateTableName
+class DynamodbClient {
+    constructor(dynamodb) {
+        if (dynamodb) {
+            this.dynamodb = dynamodb;
+        } else {
+            this.dynamodb = new AWS.DynamoDB();
+        }
+    }
+    scan() {
+        const params = {
+            TableName: stateTableName
+        }
+
+        return new Promise((resolve, reject) => {
+            this.dynamodb.scan(params, (err, data) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const items = data.Items;
+                    const itemsSorted = items.sort((a, b) => (parseInt(a.since.N) < parseInt(b.since.N)) ? 1 : -1);
+                    resolve(findStatusesConsideringDuplicates(itemsSorted));
+                }
+            });
+        });
     }
 
-    return new Promise((resolve, reject) => {
-        dynamodb.scan(params, (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                const items = data.Items;
-                const itemsSorted = items.sort((a, b) => (a.since.N < b.since.N) ? 1 : -1);
-                resolve(findStatusConsideringDuplicates(itemsSorted));
-            }
+    insertStatus(status) {
+        const params = {
+            TableName: stateTableName,
+            Item: statusToDynamoItem(status),
+        };
+        return new Promise((resolve, reject) => {
+            this.dynamodb.putItem(params, (err, data) => {
+                if (err) {
+                    console.error("Unable to add. Error JSON:", JSON.stringify(err, null, 2));
+                    reject(err);
+                } else {
+                    resolve('Inserted status successfully');
+                }
+            });
         });
-    });
+    }
 }
 
-dynamodbClient.insertStatus = (status) => {
-    const params = {
-        TableName: stateTableName,
-        Item: statusToDynamoItem(status),
-    };
-    return new Promise((resolve, reject) => {
-        dynamodb.putItem(params, (err, data) => {
-            if (err) {
-                console.error("Unable to add. Error JSON:", JSON.stringify(err, null, 2));
-                reject(err);
-            } else {
-                resolve('Inserted status successfully');
-            }
-        });
-    });
-}
+
 
 function dynamoItemToStatus(dynamoItem) {
     const status = {};
     for (const key in dynamoItem) {
-        if (dynamoItem.hasOwnProperty(key)) {
+        if (dynamoItem.hasOwnProperty(key) && key !== 'expireAt') {
             if (dynamoItem[key].N) {
                 status[key] = parseInt(dynamoItem[key]['N']);
             } else {
@@ -59,8 +67,8 @@ function statusToDynamoItem(status) {
     const item = {};
 
     const expireAt = new Date();
-    const fourWeeks = 1000 * 60 * 60 * 24 * 28;
-    expireAt.setTime(status.since + fourWeeks);
+    const sixMonths = 1000 * 60 * 60 * 24 * 183;
+    expireAt.setTime(status.since + sixMonths);
     status.expireAt = expireAt.getTime();
 
     for (const key in status) {
@@ -75,25 +83,40 @@ function statusToDynamoItem(status) {
     return item;
 }
 
-function findStatusConsideringDuplicates(items) {
+function findStatusesConsideringDuplicates(items) {
     if (items.length === 0) {
-        return { mode: modes.OFF.val };
+        return [];
     }
-    const latestStatus = dynamoItemToStatus(items[0]);
-    if (items.length === 1) {
-        return latestStatus;
-    }
+    const statuses = [];
 
-    for (let i = 1; i < items.length; i++) {
-        const nextStatus = dynamoItemToStatus(items[i]);
-        if (nextStatus.mode !== latestStatus.mode ||
-            nextStatus.fixedTemp !== latestStatus.fixedTemp ||
-            nextStatus.schedule !== latestStatus.schedule) {
-            latestStatus.since = dynamoItemToStatus(items[i - 1]).since;
-            return latestStatus;
-        }
+    let runningIndex = 0;
+    while (runningIndex < items.length) {
+        const { status, indexReached } = findStatusConsideringDuplicates(items, runningIndex);
+        runningIndex = indexReached + 1;
+        statuses.push(status);
     }
-    return latestStatus;
+    return statuses;
 }
 
-module.exports = dynamodbClient;
+function findStatusConsideringDuplicates(items, startingIndex) {
+    const startingStatus = dynamoItemToStatus(items[startingIndex]);
+    if (startingIndex >= items.length-1) {
+        return { status: startingStatus, indexReached: items.length-1 };
+    }
+
+    for (let i = startingIndex + 1; i < items.length; i++) {
+        const nextStatus = dynamoItemToStatus(items[i]);
+        if (nextStatus.mode === startingStatus.mode &&
+            nextStatus.fixedTemp === startingStatus.fixedTemp &&
+            nextStatus.schedule === startingStatus.schedule) {
+                startingStatus.since = nextStatus.since;
+        } else if (nextStatus.mode !== startingStatus.mode ||
+            nextStatus.fixedTemp !== startingStatus.fixedTemp ||
+            nextStatus.schedule !== startingStatus.schedule) {
+            return { status: startingStatus, indexReached: i-1 };
+        }
+    }
+    return { status: startingStatus, indexReached: items.length-1 };
+}
+
+module.exports = DynamodbClient;

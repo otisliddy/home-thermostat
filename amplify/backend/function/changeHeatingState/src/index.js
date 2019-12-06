@@ -1,7 +1,8 @@
-const { modes, dynamodbClient, statusHelper } = require('./home-thermostat-common');
+const { modes, DynamodbClient, statusHelper } = require('./home-thermostat-common');
 const Client = require('node-rest-client').Client;
 
-const client = new Client();
+const restClient = new Client();
+const dynamodbClient = new DynamodbClient();
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
@@ -36,7 +37,7 @@ function thingSpeak(url, callback) {
 
 function getWithRetry(url, callback, maxRetries) {
   return new Promise(function (resolve, reject) {
-    client.get(url, async (data, res) => {
+    restClient.get(url, async (data, res) => {
       if (String(data) !== '0') {
         callback(data);
         resolve(data);

@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { modes } from 'home-thermostat-common';
-import { toFormattedDate, generateTimeDiffText } from '../utils/time-helper';
+import { toFormattedDate, generateTimeDiffText } from '../util/time-helper';
 
 class Status extends Component {
   render() {
