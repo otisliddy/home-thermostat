@@ -23,9 +23,9 @@ class TempDisplay extends Component {
   
     render() {
       return (
-        <div className='tempDisplay'>
-          <div className='tempInside'>{this.state.tempInside}<sup>&#8451;</sup></div>
-          <div className='tempOutside'>{this.state.tempOutside}<sup>&#8451;</sup> Outside</div>
+        <div className='temp-display'>
+          <div className='temp-inside'>{this.state.tempInside}<sup>&#8451;</sup></div>
+          <div className='temp-outside'>{this.state.tempOutside}<sup>&#8451;</sup> Outside</div>
         </div>
       );
     }

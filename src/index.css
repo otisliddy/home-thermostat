@@ -8,7 +8,7 @@
 
 * {
   color: var(--color-font);
-  font: 16px "Century Gothic", Futura, sans-serif;
+  font: 14px "Century Gothic", Futura, sans-serif;
 }
 
 body {
@@ -28,15 +28,15 @@ body {
 
 /* Temp Display */
 
-.tempDisplay {
+.temp-display {
   padding: 10px;
 }
 
-.tempInside {
-  font-size: 36px;
+.temp-inside {
+  font-size: 42px;
 }
 
-.tempOutside {
+.temp-outside {
   font-size: 12px;
 }
 
@@ -50,51 +50,68 @@ body {
   font-size: 24px;
 }
 
-.status .since{
-  font-size: 14px;
-}
-
 /* Select Mode */
 
-.selectMode {
-  display: flex;
-  justify-content: center;
-  margin-top: 50px;
+.mode-dropdown {
+  position: relative;
+  display: inline-block;
+  margin: 10px 10px;
+  min-width: 110px;
+  border: 2px ridge;
+  border-radius: 4px;
 }
 
-.selectMode * {
+.mode-dropdown * {
+  cursor: pointer;
   color: var(--color-background);
 }
 
-.selectMode > * {
-  margin-left: 10px;
-  margin-right: 10px;
-  width: 90px;
-  font-size: 16px;
-  text-align: left;
-  flex-grow: 0.1;
-  min-width: 10px;
+.mode-dropdown button {
+  padding: 10px;
+  border: none;
 }
 
-.selectMode > button {
-  color: var(--color-background);
-}
+.mode-dropdown:hover .mode-content {display: block;}
 
-.modeSelected {
+.mode-selected, .mode-selected * {
   background-color: var(--color-mode-selected);
 }
 
-.modeUnselected {
+.mode-unselected, .mode-unselected * {
   background-color: var(--color-mode-unselected);
+}
+
+.mode-content {
+  display: none;
+  position: absolute;
+  background-color: var(--color-font);
+  min-width: 100px;
+  overflow: auto;
+  z-index: 1;
+}
+
+.mode-content div {
+  background-color: var(--color-mode-font);
+  padding: 14px 12px;
+  display: block;
+  min-height: 30px;
+}
+
+.mode-content div:first-of-type {
+  border-bottom: 2px outset grey;
+}
+
+.mode-content div:hover {
+  background-color: var(--color-mode-selected);
 }
 
 /* Recent Activity */
 
-.activityDropdown {
+.activity-dropdown {
   background-color: var(--color-background);
 }
 
-.activityTable{
+.activity-table{
   margin-left: auto;
   margin-right: auto;
 }
@@ -108,7 +125,7 @@ tr * {
   font-size: 14px;
 }
 
-tr .activityMode {
+tr .activity-mode {
   color: var(--color-mode-selected);
 }
 

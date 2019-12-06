@@ -61,13 +61,18 @@ class App extends Component {
     this.setState({ status: { mode: modes.SCHEDULE.val } });
   }
 
-  handleFixedTemp(selectedTemp) {
+  handleFixedTemp(selection) {
+
+    console.log(selection);
+    if (selection.includes('schedule')) {
+      return;
+    }
+
     console.log('Changing to fixed temp');
-    this.setState({status: {mode:'Changing to Fixed Temp...'}})
-    
-    const temp = selectedTemp[0].value;
+    this.setState({ status: { mode: 'Changing to Fixed Temp...' } })
+
     thingSpeak(thingSpeakWriteControlTempUrl + modes.FIXED_TEMP.ordinal, () => {
-      const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: temp });
+      const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: selection });
       dynamodbClient.insertStatus(status).then(() => {
         this.setState({ status: status });
         this.syncStatus();
@@ -75,17 +80,21 @@ class App extends Component {
     });
   }
 
-  handleOn(selectedDuration) {
+  handleOn(selection) {
+
+    if (selection.includes('schedule')) {
+      return;
+    }
+
     console.log('Turning on');
-    this.setState({status: {mode:'Turning Off...'}})
-    
-    const timeSeconds = selectedDuration[0].value;
+    this.setState({ status: { mode: 'Turning On...' } })
+
+    const timeSeconds = selection[0].value;
     var params = {
       FunctionName: initiateWorkflowLambdaArn,
       Payload: `{"waitSeconds": "${timeSeconds}", "action": "${modes.OFF.ordinal}"}`
     };
 
-    this.setState({ status: { mode: 'Turning On...' } });
     lambda.invoke(params, function (error) {
       if (!error) {
         thingSpeak(thingSpeakModeWriteUrl + modes.ON.ordinal, () => {
@@ -103,8 +112,8 @@ class App extends Component {
 
   handleOff() {
     console.log('Turning off');
-    this.setState({status: {mode:'Turning Off...'}})
-    
+    this.setState({ status: { mode: 'Turning Off...' } })
+
     thingSpeak(thingSpeakModeWriteUrl + modes.OFF.ordinal, () => {
       const status = statusHelper.createStatus(modes.OFF);
       dynamodbClient.insertStatus(status).then(() => {
@@ -120,13 +129,13 @@ class App extends Component {
         <TempDisplay />
         <br />
         <Status status={this.state.status} />
+        <br /><br />
         <SelectMode currentMode={this.state.status.mode}
           handleOn={this.handleOn.bind(this)}
           handleOff={this.handleOff.bind(this)}
           handleFixedTemp={this.handleFixedTemp.bind(this)}
           handleSchedule={this.handleSchedule.bind(this)} />
-        <br />
-        <br />
+        <br /><br />
         <RecentActivity statuses={this.state.statuses} />
       </div>
     );

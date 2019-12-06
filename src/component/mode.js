@@ -1,29 +1,34 @@
 import React, { Component } from 'react';
-import Select from 'react-dropdown-select';
 
 class Mode extends Component {
     constructor(props) {
         super(props);
-        this.state = { mode: this.props.mode }
-        this._child = React.createRef(); // need to create ref to get a hold on the Select's clearAll() method
+        this.state = { showItems: false }
     }
 
-    // Once a value has been selected and onChange called, reset the dropdown so it displays the mode again
     handleChange(value) {
-        if (value && value.length > 0) {
-            this.props.onChange(value);
-            this._child.current.clearAll();
-        }
+        this.props.onChange(value);
     }
 
     render() {
-        const modeClass = this.props.mode === this.props.currentMode ? 'modeSelected' : 'modeUnselected';
+        const btnOnClick = this.props.options.length > 0 ? () => { } : () => this.handleChange();
+        const modeClass = this.props.mode === this.props.currentMode ? 'mode-dropdown mode-selected' : 'mode-dropdown mode-unselected';
+        const optionRows = [];
+        this.props.options.forEach(option => {
+            optionRows.push(
+                <div onClick={() => { this.handleChange(option.value) }}>{option.label}</div>
+            )
+        })
+
         return (
-            <Select className={modeClass} ref={this._child}
-                options={this.props.options} values={[]}
-                dropdownHandle={false} searchable={false} placeholder={this.props.mode} disabled={this.props.disabled}
-                onChange={(value) => { this.handleChange(value) }}
-            />
+            <div onClick={btnOnClick} class={modeClass}>
+                <button>
+                    {this.props.mode}
+                </button>
+                <div className='mode-content'>
+                    {optionRows}
+                </div>
+            </div>
         );
     }
 }

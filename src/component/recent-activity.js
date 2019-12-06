@@ -40,12 +40,12 @@ class RecentActivity extends Component {
 
         return (
             <div>
-                <label>Activity last &nbsp;</label>
-                <select className='activityDropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
+                <span>Activity last &nbsp;</span>
+                <select className='activity-dropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
                     {options}
                 </select>
-                <label>&nbsp; days</label>
-                <table className='activityTable' >
+                <span>&nbsp; days</span>
+                <table className='activity-table' >
                     <tbody>{rows}</tbody>
                 </table>
             </div>
@@ -56,12 +56,10 @@ class RecentActivity extends Component {
         let until = '';
         if (nextStatus) {
             until = toFormattedDate(nextStatus.since);
+        } else if (status.until) {
+            until = toFormattedDate(new Date().getTime());
         } else {
-            if (!status.until) {
-                until = toFormattedDate(new Date().getTime());
-            } else {
-                until = toFormattedDate(status.until);
-            }
+            until = 'now'
         }
 
         let mode = status.mode;
@@ -69,7 +67,7 @@ class RecentActivity extends Component {
             mode += ` at ${status.fixedTemp}°`;
         }
         rows.push(<tr>
-            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activityMode'>{mode}</td>
+            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activity-mode'>{mode}</td>
         </tr>);
     }
 }

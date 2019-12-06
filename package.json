@@ -12,7 +12,6 @@
     "dateformat": "^3.0.3",
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
-    "react-dropdown-select": "^3.6.5",
     "react-scripts": "3.2.0",
     "uuid": "^3.3.3"
   },
