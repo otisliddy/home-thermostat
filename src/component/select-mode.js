@@ -20,14 +20,14 @@ const tempOptions = [
     { label: 'Schedule...', value: 'schedule' }
 ];
 for (var i = 10; i < 25; i++) {
-    tempOptions.push({ label: i, value: i.toString() });
+    tempOptions.push({ label: i, value: i });
 }
 
 class SelectMode extends Component {
     render() {
         const disabled = !/^(Off|On|Fixed Temp)$/.test(this.props.currentMode);
         return (
-            <div className='select-mode'>
+            <div>
                 <Mode mode={modes.SCHEDULE.val} currentMode={this.props.currentMode} disabled={disabled} options={[]}
                     onChange={this.props.handleSchedule} />
                 <Mode mode={modes.FIXED_TEMP.val} currentMode={this.props.currentMode} options={tempOptions} disabled={disabled}

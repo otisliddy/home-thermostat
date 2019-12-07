@@ -4,9 +4,9 @@ statusHelper.createStatus = (mode, options) => {
     const status = { mode: mode.val };
     status.since = new Date().getTime();
 
-    if (options && options.timeSeconds) {
+    if (options && options.duration) {
         const until = new Date(status.since);
-        until.setSeconds(until.getSeconds() + options.timeSeconds);
+        until.setSeconds(until.getSeconds() + options.duration);
         status.until = until.getTime();
     }
 

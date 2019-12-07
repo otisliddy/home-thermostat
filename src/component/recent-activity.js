@@ -5,8 +5,8 @@ import { toFormattedDate } from '../util/time-helper';
 const days = [1, 2, 3, 4, 7, 14, 30];
 const options = []
 days.forEach(day => options.push(
-    <option value={day}>{day}</option>
-))
+    <option key={day} value={day}>{day}</option>
+));
 
 class RecentActivity extends Component {
     constructor(props) {
@@ -39,13 +39,13 @@ class RecentActivity extends Component {
         }
 
         return (
-            <div>
+            <div id='activity'>
                 <span>Activity last &nbsp;</span>
-                <select className='activity-dropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
+                <select id='activity-dropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
                     {options}
                 </select>
                 <span>&nbsp; days</span>
-                <table className='activity-table' >
+                <table id='activity-table' >
                     <tbody>{rows}</tbody>
                 </table>
             </div>
@@ -57,7 +57,7 @@ class RecentActivity extends Component {
         if (nextStatus) {
             until = toFormattedDate(nextStatus.since);
         } else if (status.until) {
-            until = toFormattedDate(new Date().getTime());
+            until = toFormattedDate(status.until);
         } else {
             until = 'now'
         }
@@ -66,8 +66,8 @@ class RecentActivity extends Component {
         if (status.fixedTemp) {
             mode += ` at ${status.fixedTemp}°`;
         }
-        rows.push(<tr>
-            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activity-mode'>{mode}</td>
+        rows.push(<tr key={status.since}>
+            <td>{toFormattedDate(status.since)} - {until}</td><td /><td id='activity-mode'>{mode}</td>
         </tr>);
     }
 }

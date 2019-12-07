@@ -11,7 +11,7 @@ it('should create a status from off mode', function () {
 });
 
 it('should create a status from on mode', function () {
-    const status = statusHelper.createStatus(modes.ON, {timeSeconds: 900});
+    const status = statusHelper.createStatus(modes.ON, {duration: 900});
     expect(status).to.have.property('since');
     expect(status).to.have.property('until');
     expect(status).not.to.have.property('fixedTemp');

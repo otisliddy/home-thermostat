@@ -3,8 +3,10 @@ import TempDisplay from './component/temp-display';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
 import RecentActivity from './component/recent-activity';
+import ScheduleModal from './component/schedule-modal';
 import thingSpeak from './util/rest-handler';
 import { modes, DynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
+import { toSeconds, relativeDate, toFormattedDate } from './util/time-helper';
 
 /*TODO: - convert components to functional components
 - Write unit tests for generateAgoString
@@ -25,7 +27,12 @@ const dynamodbClient = new DynamodbClient();
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { status: { mode: 'Loading...' } };
+    this.state = {
+      status: { mode: 'Loading...' },
+      scheduleModal: {
+        show: false
+      }
+    };
   }
 
   componentDidMount() {
@@ -62,10 +69,8 @@ class App extends Component {
   }
 
   handleFixedTemp(selection) {
-
-    console.log(selection);
-    if (selection.includes('schedule')) {
-      return;
+    if (typeof selection === 'string' && selection.includes('schedule')) {
+      return this.setState({ scheduleModal: { show: true, mode: modes.FIXED_TEMP } });
     }
 
     console.log('Changing to fixed temp');
@@ -81,24 +86,26 @@ class App extends Component {
   }
 
   handleOn(selection) {
-
-    if (selection.includes('schedule')) {
-      return;
+    if (typeof selection === 'string' && selection.includes('schedule')) {
+      return this.setState({ scheduleModal: { show: true, mode: modes.ON } });
     }
 
     console.log('Turning on');
     this.setState({ status: { mode: 'Turning On...' } })
 
-    const timeSeconds = selection[0].value;
-    var params = {
+    const duration = selection;
+    const payload = {
+      stateChanges: [{ waitSeconds: duration, action: modes.OFF.ordinal }]
+    };
+    const params = {
       FunctionName: initiateWorkflowLambdaArn,
-      Payload: `{"waitSeconds": "${timeSeconds}", "action": "${modes.OFF.ordinal}"}`
+      Payload: JSON.stringify(payload)
     };
 
     lambda.invoke(params, function (error) {
       if (!error) {
         thingSpeak(thingSpeakModeWriteUrl + modes.ON.ordinal, () => {
-          const status = statusHelper.createStatus(modes.ON, { timeSeconds: timeSeconds });
+          const status = statusHelper.createStatus(modes.ON, { duration: duration });
           dynamodbClient.insertStatus(status).then(() => {
             this.setState({ status: status });
             this.syncStatus();
@@ -123,6 +130,52 @@ class App extends Component {
     });
   }
 
+  handleScheduleConfirm(startTime, duration) {
+    this.setState({ scheduleModal: { show: false } });
+
+    const payload = this.createPayload(startTime, duration);
+
+    const params = {
+      FunctionName: initiateWorkflowLambdaArn,
+      Payload: JSON.stringify(payload)
+    };
+
+    lambda.invoke(params, function (error) {
+      if (!error) {
+        this.syncStatus();
+        console.log('Scheduled successfully');
+      } else {
+        console.log(error, error.stack);
+      }
+    }.bind(this));
+  }
+
+  createPayload(startTime, duration) {
+    const startHour = startTime.split(':')[0];
+    const startMinute = startTime.split(':')[1];
+    const timeToStart = new Date();
+    timeToStart.setHours(startHour);
+    timeToStart.setMinutes(startMinute);
+    timeToStart.setSeconds(0);
+    if (timeToStart.getTime() < new Date().getTime()) {
+      timeToStart.setTime(timeToStart.getTime() + 1000 * 3600 * 24);
+    }
+    let timeToWait = (timeToStart.getTime() - new Date().getTime()) / 1000;
+    const durationSeconds = toSeconds(duration);
+
+    const payload = {
+      stateChanges: []
+    };
+    payload.stateChanges.push({ waitSeconds: timeToWait, action: this.state.scheduleModal.mode.ordinal });
+    payload.stateChanges.push({ waitSeconds: durationSeconds, action: modes.OFF.ordinal });
+
+    return payload;
+  }
+
+  handleScheduleCancel() {
+    this.setState({ showSchedule: false });
+  }
+
   render() {
     return (
       <div>
@@ -137,6 +190,11 @@ class App extends Component {
           handleSchedule={this.handleSchedule.bind(this)} />
         <br /><br />
         <RecentActivity statuses={this.state.statuses} />
+
+        <ScheduleModal show={this.state.scheduleModal.show}
+          handleConfirm={this.handleScheduleConfirm.bind(this)}
+          handleCancel={this.handleScheduleCancel.bind(this)}
+        />
       </div>
     );
   }

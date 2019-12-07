@@ -8,27 +8,44 @@ const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERC
 
 exports.handler = function (event, context) {
   console.log('Payload: ', event);
-  const action = event.action;
+  const action = event.stateChanges[0].action;
+
+  const workflowStatus = buildWofkflowStatus(event);
 
   if (action === modes.OFF.ordinal || action === modes.ON.ordinal) {
     thingSpeak(thingSpeakModeWriteUrl + action, (res) => {
       if (action === modes.OFF.ordinal) {
         const status = statusHelper.createStatus(modes.OFF);
         dynamodbClient.insertStatus(status)
-          .then(() => context.done(null, 'Turned off successfully ' + res));
+          .then(() => context.done(null, workflowStatus));
       } else {
-        const status = statusHelper.createStatus(modes.ON, { timeSeconds: event.waitSeconds });
+        const status = statusHelper.createStatus(modes.ON, { duration: event.waitSeconds });
         dynamodbClient.insertStatus(status)
-          .then(() => context.done(null, 'Turned on successfully ' + res));
+          .then(() => context.done(null, workflowStatus));
       }
     });
   } else if (action === modes.FIXED_TEMP.ordinal) {
     thingSpeak(thingSpeakControlTempUrl + event.temp, (res) => {
       const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: event.temp });
       dynamodbClient.insertStatus(status)
-        .then(() => context.done(null, 'Changed fixed temp successfully ' + res));
+        .then(() => context.done(null, workflowStatus));
     });
   }
+
+
+}
+
+function buildWofkflowStatus(event) {
+  event.stateChanges.splice(0, 1);
+
+  const continueWorkflow = event.stateChanges.length > 0;
+  
+  //on the off-chance something is amiss, wait a long time so to not go through costly state changes
+  const workflowStatus = {
+    stateChanges: event.stateChanges,
+    continueWorkflow: continueWorkflow
+  };
+  return workflowStatus;
 }
 
 function thingSpeak(url, callback) {

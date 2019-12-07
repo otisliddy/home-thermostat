@@ -16,12 +16,12 @@ class Mode extends Component {
         const optionRows = [];
         this.props.options.forEach(option => {
             optionRows.push(
-                <div onClick={() => { this.handleChange(option.value) }}>{option.label}</div>
+                <div key={option.label} onClick={() => { this.handleChange(option.value) }}>{option.label}</div>
             )
         })
 
         return (
-            <div onClick={btnOnClick} class={modeClass}>
+            <div onClick={btnOnClick} className={modeClass}>
                 <button>
                     {this.props.mode}
                 </button>

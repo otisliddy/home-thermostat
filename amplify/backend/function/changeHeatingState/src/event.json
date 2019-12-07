@@ -1,5 +1,12 @@
 {
-    "action": "0",
-    "waitSeconds": "0",
-    "temp": "9"
-}
+    "stateChanges": [
+      {
+        "waitSeconds": 49,
+        "action": "0"
+      },
+      {
+        "waitSeconds": 60,
+        "action": "0"
+      }
+    ]
+  }
