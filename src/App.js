@@ -6,7 +6,10 @@ import RecentActivity from './component/recent-activity';
 import ScheduleModal from './component/schedule-modal';
 import thingSpeak from './util/rest-handler';
 import { modes, DynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
-import { toSeconds, relativeDate, toFormattedDate } from './util/time-helper';
+import {
+  hoursMinsToSeconds,
+  hoursMinsToSecondsFromNow
+} from './util/time-helper';
 
 /*TODO: - convert components to functional components
 - Write unit tests for generateAgoString
@@ -29,9 +32,8 @@ class App extends Component {
     super(props);
     this.state = {
       status: { mode: 'Loading...' },
-      scheduleModal: {
-        show: false
-      }
+      scheduleModalShow: false,
+      scheduleModalMode: modes.ON
     };
   }
 
@@ -56,7 +58,7 @@ class App extends Component {
           this.setState({ status: { mode: mode.val } });
           if (mode === modes.FIXED_TEMP) {
             thingSpeak(thingSpeakControlTempUrl, (res) => {
-              this.setState({ status: { fixedTemp: res.field3 } });
+              this.setState({ status: { temp: res.field3 } });
             })
           }
         }
@@ -64,20 +66,20 @@ class App extends Component {
     });
   }
 
-  handleSchedule() {
-    this.setState({ status: { mode: modes.SCHEDULE.val } });
+  handleProfile() {
+    this.setState({ status: { mode: modes.PROFILE.val } });
   }
 
   handleFixedTemp(selection) {
     if (typeof selection === 'string' && selection.includes('schedule')) {
-      return this.setState({ scheduleModal: { show: true, mode: modes.FIXED_TEMP } });
+      return this.setState({ scheduleModalShow: true, scheduleModalMode: modes.FIXED_TEMP });
     }
 
     console.log('Changing to fixed temp');
     this.setState({ status: { mode: 'Changing to Fixed Temp...' } })
-
+    
     thingSpeak(thingSpeakWriteControlTempUrl + modes.FIXED_TEMP.ordinal, () => {
-      const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: selection });
+      const status = statusHelper.createStatus(modes.FIXED_TEMP, { temp: selection });
       dynamodbClient.insertStatus(status).then(() => {
         this.setState({ status: status });
         this.syncStatus();
@@ -87,7 +89,7 @@ class App extends Component {
 
   handleOn(selection) {
     if (typeof selection === 'string' && selection.includes('schedule')) {
-      return this.setState({ scheduleModal: { show: true, mode: modes.ON } });
+      return this.setState({ scheduleModalShow: true, scheduleModalMode: modes.ON });
     }
 
     console.log('Turning on');
@@ -95,7 +97,7 @@ class App extends Component {
 
     const duration = selection;
     const payload = {
-      stateChanges: [{ waitSeconds: duration, action: modes.OFF.ordinal }]
+      stateChanges: [{ waitSeconds: duration, mode: modes.OFF.ordinal }]
     };
     const params = {
       FunctionName: initiateWorkflowLambdaArn,
@@ -112,7 +114,7 @@ class App extends Component {
           });
         });
       } else {
-        console.log(error, error.stack);
+        alert('Let Otis know that error 15 occurred');
       }
     }.bind(this));
   }
@@ -130,10 +132,10 @@ class App extends Component {
     });
   }
 
-  handleScheduleConfirm(startTime, duration) {
-    this.setState({ scheduleModal: { show: false } });
+  handleScheduleConfirm(mode, startTime, duration, temp) {
+    this.setState({ scheduleModalShow: false });
 
-    const payload = this.createPayload(startTime, duration);
+    const payload = this.createPayload(mode, startTime, duration, temp);
 
     const params = {
       FunctionName: initiateWorkflowLambdaArn,
@@ -145,53 +147,51 @@ class App extends Component {
         this.syncStatus();
         console.log('Scheduled successfully');
       } else {
-        console.log(error, error.stack);
+        alert('Let Otis know that error 16 occurred');
       }
     }.bind(this));
   }
 
-  createPayload(startTime, duration) {
-    const startHour = startTime.split(':')[0];
-    const startMinute = startTime.split(':')[1];
-    const timeToStart = new Date();
-    timeToStart.setHours(startHour);
-    timeToStart.setMinutes(startMinute);
-    timeToStart.setSeconds(0);
-    if (timeToStart.getTime() < new Date().getTime()) {
-      timeToStart.setTime(timeToStart.getTime() + 1000 * 3600 * 24);
+  createPayload(startTime, duration, temp) {
+    const stateChange = { waitSeconds: hoursMinsToSecondsFromNow(startTime), mode: this.state.scheduleModalMode.ordinal };
+    if (this.state.scheduleModalMode === modes.FIXED_TEMP) {
+      stateChange.temp = temp;
     }
-    let timeToWait = (timeToStart.getTime() - new Date().getTime()) / 1000;
-    const durationSeconds = toSeconds(duration);
 
     const payload = {
       stateChanges: []
     };
-    payload.stateChanges.push({ waitSeconds: timeToWait, action: this.state.scheduleModal.mode.ordinal });
-    payload.stateChanges.push({ waitSeconds: durationSeconds, action: modes.OFF.ordinal });
+    payload.stateChanges.push(stateChange);
+    payload.stateChanges.push({ waitSeconds: hoursMinsToSeconds(duration), mode: modes.OFF.ordinal });
 
     return payload;
   }
 
   handleScheduleCancel() {
-    this.setState({ showSchedule: false });
+    this.setState({ scheduleModalShow: false });
+  }
+
+  handleScheduleModeChange(changeEvent) {
+    const mode = modes[Object.keys(modes).find(key => modes[key].val === changeEvent.target.value)];
+    this.setState({ scheduleModalShow: true, scheduleModalMode: mode });
   }
 
   render() {
     return (
       <div>
-        <TempDisplay />
-        <br />
-        <Status status={this.state.status} />
-        <br /><br />
-        <SelectMode currentMode={this.state.status.mode}
-          handleOn={this.handleOn.bind(this)}
-          handleOff={this.handleOff.bind(this)}
-          handleFixedTemp={this.handleFixedTemp.bind(this)}
-          handleSchedule={this.handleSchedule.bind(this)} />
-        <br /><br />
-        <RecentActivity statuses={this.state.statuses} />
-
-        <ScheduleModal show={this.state.scheduleModal.show}
+        <div disabled={this.state.scheduleModalShow}>
+          <TempDisplay />
+          <Status status={this.state.status} />
+          <SelectMode currentMode={this.state.status.mode}
+            handleOn={this.handleOn.bind(this)}
+            handleOff={this.handleOff.bind(this)}
+            handleFixedTemp={this.handleFixedTemp.bind(this)}
+            handleProfile={this.handleProfile.bind(this)} />
+          <RecentActivity statuses={this.state.statuses} />
+        </div>
+        <ScheduleModal show={this.state.scheduleModalShow}
+          mode={this.state.scheduleModalMode}
+          handleModeChange={this.handleScheduleModeChange.bind(this)}
           handleConfirm={this.handleScheduleConfirm.bind(this)}
           handleCancel={this.handleScheduleCancel.bind(this)}
         />

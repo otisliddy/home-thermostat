@@ -9,8 +9,8 @@ class Status extends Component {
 
     Object.keys(modes).forEach((mode) => {
       if (modes[mode].val === this.props.status.mode && this.props.status.since) {
-        if (this.props.status.fixedTemp) {
-          mode += ` at ${this.props.status.fixedTemp}°`;
+        if (this.props.status.temp) {
+          mode += ` at ${this.props.status.temp}°`;
         }
         since += `since ${toFormattedDate(this.props.status.since)}`;
         since += ` (${generateTimeDiffText(this.props.status.since)})`;

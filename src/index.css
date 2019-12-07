@@ -1,9 +1,9 @@
 :root {
   --color-background: #17252A;
   --color-font: #FEFFFF;
-  --color-status: #8efff0;
   --color-mode-selected: #8efff0;
   --color-mode-unselected: #8ecbc4;
+  --color-modal: #65c28a;
 
   --button-border: 2px ridge;
   --button-border-radius: 4px;
@@ -25,10 +25,17 @@ button, input {
   background-color: var(--color-background);
 }
 
+div[disabled]
+{
+  pointer-events: none;
+  opacity: 0.25;
+}
+
 /* Temp Display */
 
 #temp-display {
   padding: 10px;
+  margin-bottom: 20px;
 }
 
 #temp-inside {
@@ -41,8 +48,12 @@ button, input {
 
 /* Status */
 
+.status {
+  margin-top: 20px;
+}
+
 .status * {
-  color: var(--color-status);
+  color: var(--color-mode-selected);
 }
 
 .status .mode{
@@ -51,26 +62,29 @@ button, input {
 
 /* Select Mode */
 
+#select-mode {
+  margin-top: 20px;
+}
+
 .mode-dropdown {
   position: relative;
   display: inline-block;
-  margin: 10px 10px;
-  min-width: 110px;
+  margin: 4px 4px;
+  min-width: 70px;
+  max-width: 90px;
   border: var(--button-border);
   border-radius: var(--button-border-radius);
 }
 
 .mode-dropdown * {
-  cursor: pointer;
   color: var(--color-background);
+  font-size: 12px;
 }
 
 .mode-dropdown button {
-  padding: 10px;
+  padding: 5px;
   border: none;
 }
-
-.mode-dropdown:hover .mode-content {display: block;}
 
 .mode-selected, .mode-selected * {
   background-color: var(--color-mode-selected);
@@ -81,10 +95,9 @@ button, input {
 }
 
 .mode-content {
-  display: none;
   position: absolute;
-  background-color: var(--color-font);
-  min-width: 100px;
+  background-color: var(--color-modal);
+  width: 100%;
   overflow: auto;
   z-index: 1;
 }
@@ -94,10 +107,15 @@ button, input {
   padding: 14px 0px 14px 0px;
   display: block;
   min-height: 30px;
+  cursor: pointer;
+}
+
+.mode-no-items, .mode-no-items button {
+  cursor: pointer;
 }
 
 .mode-content div:first-of-type {
-  border-bottom: 2px outset grey;
+  border-bottom: 2px outset var(--color-mode-unselected);
 }
 
 .mode-content div:hover {
@@ -107,6 +125,7 @@ button, input {
 /* Recent Activity */
 
 #activity-dropdown {
+  margin-top: 30px;
   background-color: var(--color-background);
 }
 
@@ -145,11 +164,12 @@ button, input {
   top: 50%;
   left: 50%;
   width: 200px; /* Full width */
-  height: 200px; /* Full height */
+  height: 300px; /* Full height */
   overflow: auto;
   transform: translate(-50%, -50%);
-  background-color: var(--color-font);
+  background-color: var(--color-modal);
   padding: 10px;
+  border: solid 2px var(--color-mode-unselected);
   border-radius: 10px;
 }
 
@@ -157,10 +177,19 @@ button, input {
   font-size: 12px;
 }
 
-#schedule-modal td {
+#schedule-modal > div > * {
+  margin-top: 10px;
+}
+
+.schedule-modal-label {
   color: var(--color-background);
   text-align: right;
+  padding-left: 10px;
   padding-right: 10px;
+}
+
+#schedule-modal td {
+  padding-bottom: 5px;
 }
 
 #schedule-modal td:nth-child(1) {
@@ -172,7 +201,7 @@ button, input {
 }
 
 #schedule-modal input {
-  padding: 10px;
+  padding: 5px;
   color: var(--color-font);
 }
 
@@ -186,10 +215,6 @@ button, input {
   width: 100%;
 }
 
-.schedule-modal-time {
-  margin: 5px
-}
-
 #schedule-modal-buttons {  
   position: absolute;
   bottom: 0px;
@@ -200,5 +225,6 @@ button, input {
   text-align: center;
   color: var(--color-font);
   padding: 10px;
-  margin: 5px 5px 0px 5px;
+  margin: 5px 5px 15px;
+  cursor: pointer;
 }

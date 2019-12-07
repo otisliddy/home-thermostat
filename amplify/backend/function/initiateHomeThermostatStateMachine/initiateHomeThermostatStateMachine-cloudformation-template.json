@@ -63,7 +63,7 @@
 				"Timeout": "25",
 				"Code": {
 					"S3Bucket": "home-thermostat-test-20191029230339-deployment",
-					"S3Key": "amplify-builds/initiateHomeThermostatStateMachine-7a6d466546774d6b7838-build.zip"
+					"S3Key": "amplify-builds/initiateHomeThermostatStateMachine-58426a7152517079764e-build.zip"
 				}
 			}
 		},

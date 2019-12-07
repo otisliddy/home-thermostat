@@ -11,12 +11,29 @@ function toFormattedDate(dateMillis) {
   }
 }
 
-function toSeconds(hoursMins) {
+function hoursMinsToSeconds(hoursMins) {
   const hours = hoursMins.split(':')[0];
   const mins = hoursMins.split(':')[1];
 
   return hours * 3600 + mins * 60;
 }
+
+function hoursMinsToSecondsFromNow(hoursMins) {
+  const startHour = hoursMins.split(':')[0];
+  const startMinute = hoursMins.split(':')[1];
+  const timeToStart = new Date();
+  timeToStart.setHours(startHour);
+  timeToStart.setMinutes(startMinute);
+  timeToStart.setSeconds(0);
+  if (timeToStart.getTime() < new Date().getTime()) {
+    timeToStart.setTime(timeToStart.getTime() + 1000 * 3600 * 24);
+  }
+  
+  let timeToWait = (timeToStart.getTime() - new Date().getTime()) / 1000;
+  return timeToWait
+}
+
+
 
 function relativeDate(relativeSeconds) {
   const date = new Date();
@@ -59,7 +76,8 @@ function generateTimeDiffText(dateMillis) {
 
 export {
   toFormattedDate,
-  toSeconds,
+  hoursMinsToSeconds,
+  hoursMinsToSecondsFromNow,
   relativeDate,
   generateTimeDiffText
 }

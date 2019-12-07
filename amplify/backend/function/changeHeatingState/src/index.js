@@ -1,4 +1,4 @@
-const { modes, DynamodbClient, statusHelper } = require('./home-thermostat-common');
+const { modes, fromOrdinal, DynamodbClient, statusHelper } = require('./home-thermostat-common');
 const Client = require('node-rest-client').Client;
 
 const restClient = new Client();
@@ -8,43 +8,47 @@ const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERC
 
 exports.handler = function (event, context) {
   console.log('Payload: ', event);
-  const action = event.stateChanges[0].action;
+  const mode = event.stateChanges[0].mode;
 
+  if (mode === modes.OFF.ordinal || mode === modes.ON.ordinal) {
+    thingSpeak(thingSpeakModeWriteUrl + mode, (res) => {
+      handleSuccessfulResponse(event, mode, context);
+    });
+  } else if (mode === modes.FIXED_TEMP.ordinal) {
+    thingSpeak(thingSpeakControlTempUrl + event.stateChanges[0].temp, (res) => {
+      handleSuccessfulResponse(event, mode, context);
+    })
+  };
+}
+
+function handleSuccessfulResponse(event, mode, context) {
+  const statusOptions = buildStatusOptions(event, mode);
   const workflowStatus = buildWofkflowStatus(event);
 
-  if (action === modes.OFF.ordinal || action === modes.ON.ordinal) {
-    thingSpeak(thingSpeakModeWriteUrl + action, (res) => {
-      if (action === modes.OFF.ordinal) {
-        const status = statusHelper.createStatus(modes.OFF);
-        dynamodbClient.insertStatus(status)
-          .then(() => context.done(null, workflowStatus));
-      } else {
-        const status = statusHelper.createStatus(modes.ON, { duration: event.waitSeconds });
-        dynamodbClient.insertStatus(status)
-          .then(() => context.done(null, workflowStatus));
-      }
-    });
-  } else if (action === modes.FIXED_TEMP.ordinal) {
-    thingSpeak(thingSpeakControlTempUrl + event.temp, (res) => {
-      const status = statusHelper.createStatus(modes.FIXED_TEMP, { fixedTemp: event.temp });
-      dynamodbClient.insertStatus(status)
-        .then(() => context.done(null, workflowStatus));
-    });
+  const status = statusHelper.createStatus(fromOrdinal(mode), statusOptions);
+  dynamodbClient.insertStatus(status)
+    .then(() => context.done(null, workflowStatus));
+}
+
+function buildStatusOptions(event, mode) {
+  const statusOptions = {};
+  if (event.stateChanges.length > 1 && event.stateChanges[1].waitSeconds) {
+    statusOptions.duration = event.stateChanges[1].waitSeconds;
   }
-
-
+  if (mode === modes.FIXED_TEMP.ordinal) {
+    statusOptions.temp = event.stateChanges[0].temp;
+  }
+  return statusOptions;
 }
 
 function buildWofkflowStatus(event) {
   event.stateChanges.splice(0, 1);
-
   const continueWorkflow = event.stateChanges.length > 0;
-  
-  //on the off-chance something is amiss, wait a long time so to not go through costly state changes
   const workflowStatus = {
     stateChanges: event.stateChanges,
     continueWorkflow: continueWorkflow
   };
+
   return workflowStatus;
 }
 

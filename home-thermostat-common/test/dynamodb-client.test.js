@@ -79,24 +79,24 @@ describe.only('Scan', function () {
     });
 
     it('FIXED_TEMP, FIXED_TEMP with same temp', function (done) {
-        addDataItem(modes.FIXED_TEMP, 1000, { fixedTemp: 19 });
-        addDataItem(modes.FIXED_TEMP, 1100, { fixedTemp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1000, { temp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
         dynamodbClient.scan().then((statuses) => {
             expect(statuses).to.have.length(1);
-            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1000, fixedTemp: 19 });
+            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1000, temp: 19 });
             done();
         }).catch((err) => done(err));
     });
 
     it('FIXED_TEMP, FIXED_TEMP with different temp', function (done) {
-        addDataItem(modes.FIXED_TEMP, 900, { fixedTemp: 18 });
-        addDataItem(modes.FIXED_TEMP, 1100, { fixedTemp: 19 });
+        addDataItem(modes.FIXED_TEMP, 900, { temp: 18 });
+        addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
         dynamodbClient.scan().then((statuses) => {
             expect(statuses).to.have.length(2);
-            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, fixedTemp: 19 });
-            expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 900, fixedTemp: 18 });
+            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, temp: 19 });
+            expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 900, temp: 18 });
             done();
         }).catch((err) => done(err));
     });
@@ -165,27 +165,27 @@ describe.only('Scan', function () {
     });
 
     it('FIXED_TEMP, ON, FIXED_TEMP', function (done) {
-        addDataItem(modes.FIXED_TEMP, 900, { fixedTemp: 18 });
+        addDataItem(modes.FIXED_TEMP, 900, { temp: 18 });
         addDataItem(modes.ON, 1000, { until: 2100 });
-        addDataItem(modes.FIXED_TEMP, 1100, { fixedTemp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
         dynamodbClient.scan().then((statuses) => {
             expect(statuses).to.have.length(3);
-            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, fixedTemp: 19 });
+            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, temp: 19 });
             expect(statuses[1]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
-            expect(statuses[2]).to.eql({ mode: modes.FIXED_TEMP.val, since: 900, fixedTemp: 18 });
+            expect(statuses[2]).to.eql({ mode: modes.FIXED_TEMP.val, since: 900, temp: 18 });
             done();
         }).catch((err) => done(err));
     });
 
     it('OFF, FIXED_TEMP, FIXED_TEMP with same temp', function (done) {
         addDataItem(modes.OFF, 900);
-        addDataItem(modes.FIXED_TEMP, 1000, { fixedTemp: 19 });
-        addDataItem(modes.FIXED_TEMP, 1100, { fixedTemp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1000, { temp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
         dynamodbClient.scan().then((statuses) => {
             expect(statuses).to.have.length(2);
-            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1000, fixedTemp: 19 });
+            expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1000, temp: 19 });
             expect(statuses[1]).to.eql({ mode: modes.OFF.val, since: 900 });
             done();
         }).catch((err) => done(err));
@@ -193,13 +193,13 @@ describe.only('Scan', function () {
 
     it('ON, FIXED_TEMP, ON', function (done) {
         addDataItem(modes.ON, 1000, { until: 1900 });
-        addDataItem(modes.FIXED_TEMP, 1100, { fixedTemp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
         addDataItem(modes.ON, 1200, { until: 2100 });
 
         dynamodbClient.scan().then((statuses) => {
             expect(statuses).to.have.length(3);
             expect(statuses[0]).to.eql({ mode: modes.ON.val, since: 1200, until: 2100 });
-            expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, fixedTemp: 19 });
+            expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, temp: 19 });
             expect(statuses[2]).to.eql({ mode: modes.ON.val, since: 1000, until: 1900 });
             done();
         }).catch((err) => done(err));
@@ -211,9 +211,9 @@ describe.only('Scan', function () {
         addDataItem(modes.ON, 1100, { until: 2000 });
         addDataItem(modes.ON, 1200, { until: 2100 });
         addDataItem(modes.OFF, 1300);
-        addDataItem(modes.FIXED_TEMP, 1400, { fixedTemp: 19 });
-        addDataItem(modes.FIXED_TEMP, 1500, { fixedTemp: 19 });
-        addDataItem(modes.FIXED_TEMP, 1600, { fixedTemp: 20 });
+        addDataItem(modes.FIXED_TEMP, 1400, { temp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1500, { temp: 19 });
+        addDataItem(modes.FIXED_TEMP, 1600, { temp: 20 });
         addDataItem(modes.OFF, 1700);
         addDataItem(modes.OFF, 1800);
 
@@ -222,8 +222,8 @@ describe.only('Scan', function () {
             expect(statuses[5]).to.eql({ mode: modes.SCHEDULE.val, since: 900, schedule: 'A' });
             expect(statuses[4]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
             expect(statuses[3]).to.eql({ mode: modes.OFF.val, since: 1300 });
-            expect(statuses[2]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1400, fixedTemp: 19 });
-            expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1600, fixedTemp: 20 });
+            expect(statuses[2]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1400, temp: 19 });
+            expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1600, temp: 20 });
             expect(statuses[0]).to.eql({ mode: modes.OFF.val, since: 1700 });
             done();
         }).catch((err) => done(err));
@@ -236,8 +236,8 @@ describe.only('Scan', function () {
         if (options.until) {
             dataItem.until = { N: options.until.toString() }
         }
-        if (options.fixedTemp) {
-            dataItem.fixedTemp = { N: options.fixedTemp.toString() }
+        if (options.temp) {
+            dataItem.temp = { N: options.temp.toString() }
         }
         if (options.schedule) {
             dataItem.schedule = { S: options.schedule }

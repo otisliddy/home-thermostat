@@ -107,11 +107,11 @@ function findStatusConsideringDuplicates(items, startingIndex) {
     for (let i = startingIndex + 1; i < items.length; i++) {
         const nextStatus = dynamoItemToStatus(items[i]);
         if (nextStatus.mode === startingStatus.mode &&
-            nextStatus.fixedTemp === startingStatus.fixedTemp &&
+            nextStatus.temp === startingStatus.temp &&
             nextStatus.schedule === startingStatus.schedule) {
                 startingStatus.since = nextStatus.since;
         } else if (nextStatus.mode !== startingStatus.mode ||
-            nextStatus.fixedTemp !== startingStatus.fixedTemp ||
+            nextStatus.temp !== startingStatus.temp ||
             nextStatus.schedule !== startingStatus.schedule) {
             return { status: startingStatus, indexReached: i-1 };
         }

@@ -10,8 +10,8 @@ statusHelper.createStatus = (mode, options) => {
         status.until = until.getTime();
     }
 
-    if (options && options.fixedTemp) {
-        status.fixedTemp = options.fixedTemp;
+    if (options && options.temp) {
+        status.temp = options.temp;
     }
 
     return status;
