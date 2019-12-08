@@ -9,6 +9,9 @@
   },
   "author": "otisliddy",
   "license": "ISC",
+  "dependencies": {
+    "uuid": "^3.3.3"
+  },
   "devDependencies": {
     "chai": "*",
     "mocha": "*",

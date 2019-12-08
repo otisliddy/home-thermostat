@@ -2,11 +2,14 @@
   --color-background: #17252A;
   --color-font: #FEFFFF;
   --color-mode-selected: #2FE6DE;
-  --color-mode-unselected: #B1EDE8;
-  --color-modal: #B8D7EF;
+  --color-mode-unselected: #89F9F4;
+  --color-modal: #FEFFFF;
+  --color-cancel: #ba3737;
 
   --button-border: 2px ridge;
-  --button-border-radius: 4px;
+  --button-border-radius: 3px;
+
+  --gap-between-comonents: 30px;
 }
 
 * {
@@ -49,7 +52,7 @@ div[disabled]
 /* Status */
 
 .status {
-  margin-top: 20px;
+  margin-top: var(--gap-between-comonents);
 }
 
 .status * {
@@ -63,14 +66,14 @@ div[disabled]
 /* Select Mode */
 
 #select-mode {
-  margin-top: 20px;
+  margin-top: var(--gap-between-comonents);
 }
 
 .mode-dropdown {
   position: relative;
   display: inline-block;
-  margin: 4px 4px;
-  min-width: 80px;
+  margin: 4px 6px;
+  min-width: 90px;
   border: var(--button-border);
   border-radius: var(--button-border-radius);
 }
@@ -121,37 +124,51 @@ div[disabled]
   background-color: var(--color-mode-selected);
 }
 
-/* Recent Activity */
+/* Activity */
 
-#activity-dropdown {
-  margin-top: 30px;
+.activity {
+  margin-top: var(--gap-between-comonents);
+}
+
+#activity-cancel {
+  position: absolute;
+  color: var(--color-cancel);
+  border: 1px solid var(--color-cancel);
+  margin-left: 15px;
+  padding: 2px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.activity-dropdown {
   background-color: var(--color-background);
 }
 
-#activity-table{
+.activity-table{
+  margin-top: 4px;
   margin-left: auto;
   margin-right: auto;
 }
 
-#activity tr {
+.activity tr {
   border: solid;
   border-width: 1px 0;
 }
 
-#activity tr * {
+.activity tr * {
   font-size: 14px;
 }
 
-#activity tr #activity-mode {
+.activity tr .activity-mode {
   color: var(--color-mode-selected);
 }
 
-#activity tr td {
+.activity tr td {
   padding: 8px 0;
   text-align: left;
 }
 
-#activity table tr td:empty {
+.activity table tr td:empty {
   width: 30px;
 }
 
@@ -185,6 +202,10 @@ div[disabled]
   text-align: right;
   padding-left: 10px;
   padding-right: 10px;
+}
+
+.schedule-modal-mode * {
+  font-weight: bold;
 }
 
 #schedule-modal td {
@@ -225,5 +246,4 @@ div[disabled]
   color: var(--color-font);
   padding: 10px;
   margin: 5px 5px 15px;
-  cursor: pointer;
 }

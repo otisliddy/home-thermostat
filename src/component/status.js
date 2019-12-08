@@ -7,8 +7,8 @@ class Status extends Component {
     let mode = this.props.status.mode;
     let since = '';
 
-    Object.keys(modes).forEach((mode) => {
-      if (modes[mode].val === this.props.status.mode && this.props.status.since) {
+    Object.keys(modes).forEach((key) => {
+      if (modes[key].val === this.props.status.mode && this.props.status.since) {
         if (this.props.status.temp) {
           mode += ` at ${this.props.status.temp}°`;
         }

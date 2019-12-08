@@ -9,10 +9,19 @@
 			"service": "Lambda",
 			"providerPlugin": "awscloudformation",
 			"build": true
+		},
+		"cancelRunningWorkflows": {
+			"service": "Lambda",
+			"providerPlugin": "awscloudformation",
+			"build": true
 		}
 	},
 	"storage": {
 		"thermostatState": {
+			"service": "DynamoDB",
+			"providerPlugin": "awscloudformation"
+		},
+		"scheduledActivity": {
 			"service": "DynamoDB",
 			"providerPlugin": "awscloudformation"
 		}

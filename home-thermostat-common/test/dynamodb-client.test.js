@@ -8,7 +8,7 @@ const { DynamodbClient, modes, AWS } = require('..');
 const dynamodbStub = new AWS.DynamoDB();
 const dynamodbClient = new DynamodbClient(dynamodbStub);
 
-describe.only('Scan', function () {
+describe('Scan', function () {
 
     let sinonSandbox;
     let data;
@@ -101,29 +101,6 @@ describe.only('Scan', function () {
         }).catch((err) => done(err));
     });
 
-    it('SCHEDULE, SCHEDULE with same schedule', function (done) {
-        addDataItem(modes.SCHEDULE, 1000, { schedule: 'A' });
-        addDataItem(modes.SCHEDULE, 1100, { schedule: 'A' });
-
-        dynamodbClient.scan().then((statuses) => {
-            expect(statuses).to.have.length(1);
-            expect(statuses[0]).to.eql({ mode: modes.SCHEDULE.val, since: 1000, schedule: 'A' });
-            done();
-        }).catch((err) => done(err));
-    });
-
-    it('SCHEDULE, SCHEDULE with different schedules', function (done) {
-        addDataItem(modes.SCHEDULE, 1000, { schedule: 'A' });
-        addDataItem(modes.SCHEDULE, 1100, { schedule: 'B' });
-
-        dynamodbClient.scan().then((statuses) => {
-            expect(statuses).to.have.length(2);
-            expect(statuses[0]).to.eql({ mode: modes.SCHEDULE.val, since: 1100, schedule: 'B' });
-            expect(statuses[1]).to.eql({ mode: modes.SCHEDULE.val, since: 1000, schedule: 'A' });
-            done();
-        }).catch((err) => done(err));
-    });
-
     it('ON, OFF, OFF', function (done) {
         addDataItem(modes.OFF, 1000);
         addDataItem(modes.ON, 900, { until: 2000 });
@@ -205,8 +182,7 @@ describe.only('Scan', function () {
         }).catch((err) => done(err));
     });
 
-    it('SCHEDULE, ON, ON, ON, OFF, FIXED_TEMP, FIXED_TEMP, FIXED_TEMP, OFF, OFF', function (done) {
-        addDataItem(modes.SCHEDULE, 900, { schedule: 'A' });
+    it('ON, ON, ON, OFF, FIXED_TEMP, FIXED_TEMP, FIXED_TEMP, OFF, OFF', function (done) {
         addDataItem(modes.ON, 1000, { until: 1900 });
         addDataItem(modes.ON, 1100, { until: 2000 });
         addDataItem(modes.ON, 1200, { until: 2100 });
@@ -218,8 +194,7 @@ describe.only('Scan', function () {
         addDataItem(modes.OFF, 1800);
 
         dynamodbClient.scan().then((statuses) => {
-            expect(statuses).to.have.length(6);
-            expect(statuses[5]).to.eql({ mode: modes.SCHEDULE.val, since: 900, schedule: 'A' });
+            expect(statuses).to.have.length(5);
             expect(statuses[4]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
             expect(statuses[3]).to.eql({ mode: modes.OFF.val, since: 1300 });
             expect(statuses[2]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1400, temp: 19 });
@@ -238,9 +213,6 @@ describe.only('Scan', function () {
         }
         if (options.temp) {
             dataItem.temp = { N: options.temp.toString() }
-        }
-        if (options.schedule) {
-            dataItem.schedule = { S: options.schedule }
         }
         data.Items.push(dataItem);
     }

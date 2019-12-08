@@ -5,6 +5,7 @@ const restClient = new Client();
 const dynamodbClient = new DynamodbClient();
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
+const stateTableName = 'thermostatState-test';
 
 exports.handler = function (event, context) {
   console.log('Payload: ', event);
@@ -26,7 +27,7 @@ function handleSuccessfulResponse(event, mode, context) {
   const workflowStatus = buildWofkflowStatus(event);
 
   const status = statusHelper.createStatus(fromOrdinal(mode), statusOptions);
-  dynamodbClient.insertStatus(status)
+  dynamodbClient.insertStatus(stateTableName, status)
     .then(() => context.done(null, workflowStatus));
 }
 

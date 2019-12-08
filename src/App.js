@@ -2,12 +2,22 @@ import React, { Component } from 'react';
 import TempDisplay from './component/temp-display';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
-import RecentActivity from './component/recent-activity';
+import PreviousActivity from './component/previous-activity';
+import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
 import thingSpeak from './util/rest-handler';
-import { modes, DynamodbClient, AWS, statusHelper } from 'home-thermostat-common';
+import AWS from './config/aws-config';
+
+import StepFunctions from 'aws-sdk/clients/stepfunctions';
+import {
+  modes,
+  DynamodbClient,
+  StepFunctionsClient,
+  statusHelper
+} from 'home-thermostat-common';
 import {
   hoursMinsToSeconds,
+  hoursMinsToDate,
   hoursMinsToSecondsFromNow
 } from './util/time-helper';
 
@@ -23,9 +33,12 @@ const thingSpeakWriteControlTempUrl = 'https://api.thingspeak.com/update?api_key
 
 // Have to use a proxyLambda because can't invoke StepFunctions directly: https://forums.aws.amazon.com/thread.jspa?threadID=248225
 const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiate-home-thermostat-state-machine-test';
+const stateTableName = 'thermostatState-test';
+const scheduleTableName = 'scheduledActivity-test';
 
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
-const dynamodbClient = new DynamodbClient();
+const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
+const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
 
 class App extends Component {
   constructor(props) {
@@ -42,7 +55,18 @@ class App extends Component {
   }
 
   syncStatus() {
-    dynamodbClient.scan().then((statuses) => {
+    dynamodbClient.scan(scheduleTableName).then((rawStatuses) => {
+      const statuses = [];
+      rawStatuses.forEach(status => {
+        statuses.push(statusHelper.dynamoItemToStatus(status));
+      });
+      this.setState({ scheduledActivity: statuses });
+    });
+
+    dynamodbClient.scan(stateTableName).then((statusesRaw) => {
+      const statusesSorted = statusesRaw.sort((a, b) => (parseInt(a.since.N) < parseInt(b.since.N)) ? 1 : -1);
+      const statuses = statusHelper.findStatusesConsideringDuplicates(statusesSorted);
+
       if (statuses.length === 0) {
         return this.setState({ status: { mode: modes.OFF.val } });
       }
@@ -77,13 +101,10 @@ class App extends Component {
 
     console.log('Changing to fixed temp');
     this.setState({ status: { mode: 'Changing to Fixed Temp...' } })
-    
+
     thingSpeak(thingSpeakWriteControlTempUrl + modes.FIXED_TEMP.ordinal, () => {
       const status = statusHelper.createStatus(modes.FIXED_TEMP, { temp: selection });
-      dynamodbClient.insertStatus(status).then(() => {
-        this.setState({ status: status });
-        this.syncStatus();
-      });
+      this.persistStatus(status);
     });
   }
 
@@ -91,27 +112,17 @@ class App extends Component {
     if (typeof selection === 'string' && selection.includes('schedule')) {
       return this.setState({ scheduleModalShow: true, scheduleModalMode: modes.ON });
     }
+    const duration = selection;
 
     console.log('Turning on');
     this.setState({ status: { mode: 'Turning On...' } })
 
-    const duration = selection;
-    const payload = {
-      stateChanges: [{ waitSeconds: duration, mode: modes.OFF.ordinal }]
-    };
-    const params = {
-      FunctionName: initiateWorkflowLambdaArn,
-      Payload: JSON.stringify(payload)
-    };
-
+    const params = this.createInitiateWorkflowParams(0, selection);
     lambda.invoke(params, function (error) {
       if (!error) {
         thingSpeak(thingSpeakModeWriteUrl + modes.ON.ordinal, () => {
           const status = statusHelper.createStatus(modes.ON, { duration: duration });
-          dynamodbClient.insertStatus(status).then(() => {
-            this.setState({ status: status });
-            this.syncStatus();
-          });
+          this.persistStatus(status);
         });
       } else {
         alert('Let Otis know that error 15 occurred');
@@ -125,46 +136,52 @@ class App extends Component {
 
     thingSpeak(thingSpeakModeWriteUrl + modes.OFF.ordinal, () => {
       const status = statusHelper.createStatus(modes.OFF);
-      dynamodbClient.insertStatus(status).then(() => {
-        this.setState({ status: status });
-        this.syncStatus();
-      });
+      this.persistStatus(status);
     });
   }
 
-  handleScheduleConfirm(mode, startTime, duration, temp) {
+  handleScheduleConfirm(startTime, duration, temp) {
     this.setState({ scheduleModalShow: false });
 
-    const payload = this.createPayload(mode, startTime, duration, temp);
-
-    const params = {
-      FunctionName: initiateWorkflowLambdaArn,
-      Payload: JSON.stringify(payload)
-    };
-
+    const params = this.createInitiateWorkflowParams(hoursMinsToSecondsFromNow(startTime), hoursMinsToSeconds(duration), temp);
     lambda.invoke(params, function (error) {
       if (!error) {
-        this.syncStatus();
-        console.log('Scheduled successfully');
+        const options = { duration: hoursMinsToSeconds(duration) };
+        if (this.state.scheduleModalMode === modes.FIXED_TEMP) {
+          options.temp = temp;
+        }
+        const status = statusHelper.createStatus(this.state.scheduleModalMode, options, hoursMinsToDate(startTime));
+        dynamodbClient.insertStatus(scheduleTableName, status).then(() => {
+          this.syncStatus();
+          console.log('Scheduled successfully');
+        });
       } else {
         alert('Let Otis know that error 16 occurred');
       }
     }.bind(this));
   }
 
-  createPayload(startTime, duration, temp) {
-    const stateChange = { waitSeconds: hoursMinsToSecondsFromNow(startTime), mode: this.state.scheduleModalMode.ordinal };
+  createInitiateWorkflowParams(startSecondsFromNow, durationSeconds, temp) {
+    const stateChange = { waitSeconds: startSecondsFromNow, mode: this.state.scheduleModalMode.ordinal };
     if (this.state.scheduleModalMode === modes.FIXED_TEMP) {
       stateChange.temp = temp;
     }
 
     const payload = {
-      stateChanges: []
+      workflowInput: {
+        stateChanges: []
+      },
+      cancelExisting: false
     };
-    payload.stateChanges.push(stateChange);
-    payload.stateChanges.push({ waitSeconds: hoursMinsToSeconds(duration), mode: modes.OFF.ordinal });
+    payload.workflowInput.stateChanges.push(stateChange);
+    payload.workflowInput.stateChanges.push({ waitSeconds: durationSeconds, mode: modes.OFF.ordinal });
 
-    return payload;
+    const params = {
+      FunctionName: initiateWorkflowLambdaArn,
+      Payload: JSON.stringify(payload)
+    };
+
+    return params;
   }
 
   handleScheduleCancel() {
@@ -174,6 +191,26 @@ class App extends Component {
   handleScheduleModeChange(changeEvent) {
     const mode = modes[Object.keys(modes).find(key => modes[key].val === changeEvent.target.value)];
     this.setState({ scheduleModalShow: true, scheduleModalMode: mode });
+  }
+
+  handleScheduleCancelAll() {
+    console.log('otis');
+    dynamodbClient.scan(scheduleTableName).then((statuses) => {
+      statuses.forEach(status => {
+        dynamodbClient.delete(scheduleTableName, statusHelper.dynamoItemToStatus(status).since);
+      });
+    });
+    stepFunctionsClient.stopCurrentExecutions().then(() => {
+      this.handleOff();
+    });
+  }
+
+  persistStatus(status) {
+    console.log(status);
+    dynamodbClient.insertStatus(stateTableName, status).then(() => {
+      this.setState({ status: status });
+      this.syncStatus();
+    });
   }
 
   render() {
@@ -187,9 +224,12 @@ class App extends Component {
             handleOff={this.handleOff.bind(this)}
             handleFixedTemp={this.handleFixedTemp.bind(this)}
             handleProfile={this.handleProfile.bind(this)} />
-          <RecentActivity statuses={this.state.statuses} />
+          <ScheduledActivity statuses={this.state.scheduledActivity}
+            handleCancelAll={this.handleScheduleCancelAll.bind(this)} />
+          <PreviousActivity statuses={this.state.statuses} />
         </div>
-        <ScheduleModal show={this.state.scheduleModalShow}
+        <ScheduleModal
+          show={this.state.scheduleModalShow}
           mode={this.state.scheduleModalMode}
           handleModeChange={this.handleScheduleModeChange.bind(this)}
           handleConfirm={this.handleScheduleConfirm.bind(this)}

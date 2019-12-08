@@ -1,12 +1,11 @@
 {
+  "cancelExisting": true,
+  "workflowInput": {
     "stateChanges": [
       {
-        "waitSeconds": 49,
-        "mode": "0"
-      },
-      {
-        "waitSeconds": 60,
+        "waitSeconds": 0,
         "mode": "0"
       }
     ]
   }
+}

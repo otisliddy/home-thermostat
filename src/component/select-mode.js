@@ -28,8 +28,8 @@ class SelectMode extends Component {
         const disabled = !/^(Off|On|Fixed Temp)$/.test(this.props.currentMode);
         return (
             <div id='select-mode'>
-                <Mode mode={modes.PROFILE.val} currentMode={this.props.currentMode} disabled={disabled} options={[]}
-                    onChange={this.props.handleProfile} />
+                {/* <Mode mode={modes.PROFILE.val} currentMode={this.props.currentMode} disabled={disabled} options={[]}
+                    onChange={this.props.handleProfile} /> */}
                 <Mode mode={modes.FIXED_TEMP.val} currentMode={this.props.currentMode} options={tempOptions} disabled={disabled}
                     onChange={this.props.handleFixedTemp} />
                 <Mode mode={modes.ON.val} currentMode={this.props.currentMode} options={durationOptions} disabled={disabled}

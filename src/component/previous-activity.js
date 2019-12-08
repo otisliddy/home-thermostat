@@ -8,7 +8,7 @@ days.forEach(day => options.push(
     <option key={day} value={day}>{day}</option>
 ));
 
-class RecentActivity extends Component {
+class PreviousActivity extends Component {
     constructor(props) {
         super(props);
         this.state = { days: 1 }
@@ -39,13 +39,13 @@ class RecentActivity extends Component {
         }
 
         return (
-            <div id='activity'>
+            <div className='activity'>
                 <span>Activity last &nbsp;</span>
-                <select id='activity-dropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
+                <select className='activity-dropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
                     {options}
                 </select>
                 <span>&nbsp; days</span>
-                <table id='activity-table' >
+                <table className='activity-table' >
                     <tbody>{rows}</tbody>
                 </table>
             </div>
@@ -67,9 +67,9 @@ class RecentActivity extends Component {
             mode += ` at ${status.temp}°`;
         }
         rows.push(<tr key={status.since}>
-            <td>{toFormattedDate(status.since)} - {until}</td><td /><td id='activity-mode'>{mode}</td>
+            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activity-mode'>{mode}</td>
         </tr>);
     }
 }
 
-export default RecentActivity;
+export default PreviousActivity;

@@ -63,7 +63,7 @@
 				"Timeout": "25",
 				"Code": {
 					"S3Bucket": "home-thermostat-test-20191029230339-deployment",
-					"S3Key": "amplify-builds/initiateHomeThermostatStateMachine-58426a7152517079764e-build.zip"
+					"S3Key": "amplify-builds/initiateHomeThermostatStateMachine-4f33574f46425172464c-build.zip"
 				}
 			}
 		},
@@ -126,7 +126,8 @@
 							"Action": [
 								"logs:CreateLogGroup",
 								"logs:CreateLogStream",
-								"logs:PutLogEvents"
+								"logs:PutLogEvents",
+								"states:StartExecution"
 							],
 							"Resource": {
 								"Fn::Sub": [

@@ -1,6 +1,6 @@
 const expect = require('chai').expect;
 const statusHelper = require('../src/util/status-helper');
-const modes = require('../src/constants/modes');
+const { modes } = require('../src/constants/modes');
 
 it('should create a status from off mode', function () {
     const status = statusHelper.createStatus(modes.OFF);
