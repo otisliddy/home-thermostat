@@ -2,7 +2,7 @@
   --color-background: #17252A;
   --color-font: #FEFFFF;
   --color-mode-selected: #2FE6DE;
-  --color-mode-unselected: #89F9F4;
+  --color-mode-unselected: rgb(187, 247, 244);
   --color-modal: #FEFFFF;
   --color-cancel: #ba3737;
 

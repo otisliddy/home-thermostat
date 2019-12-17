@@ -8,15 +8,15 @@ const char* SERVER_NAME = "api.thingspeak.com";
 const char* API_WRITE_KEY = "QERCNNZO451W8OA3";
 const unsigned long CHANNEL_ID = 879596;
 const unsigned int F1_LIVE_TEMP = 1;
-const unsigned int F4_IS_HEATING_ON = 4;
 const unsigned int F2_MODE = 2;
 const unsigned int F3_CONTROL_TEMP = 3;
+const unsigned int F4_IS_HEATING_ON = 4;
 const unsigned int MODE_OFF = 0;
 const unsigned int MODE_ON = 1;
 const unsigned int MODE_TEMP = 2;
 const unsigned int uploadInterval = 600;
 
-const int LED_PIN = D0;
+const int RELAY_PIN = D0;
 const int TEMP_PIN = A0;
 
 const double VCC = 3.3;             // NodeMCU on board 3.3v vcc
@@ -25,11 +25,15 @@ const double ADC_RESOLUTION = 1023; // 10-bit adc
 
 WiFiClient client;
 int intervalElapsed = 0;
+int controlMode = 0;
+boolean isHeatingOn = false;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+  pinMode(D4, OUTPUT);
+  digitalWrite(D4, HIGH);
   setUpWiFi();
   ThingSpeak.begin(client);
 }
@@ -49,14 +53,14 @@ void setUpWiFi(){
 
 void loop() {
   double temp = readTemp();
-  int controlMode = readControlMode();
+  readControlMode();
 
-  boolean isHeatingOn = controlRelay(temp, controlMode);
+  controlRelay(temp);
   
   if (intervalElapsed < uploadInterval){
     intervalElapsed +=2;
   } else {
-    uploadToServer(temp, isHeatingOn);
+    uploadToServer(temp);
     intervalElapsed = 0;
   }
 
@@ -65,6 +69,8 @@ void loop() {
 
 double readTemp() {
   double adc_value = analogRead(TEMP_PIN);
+  adc_value = isHeatingOn == false ? adc_value : adc_value / 1.102;
+  
   double Vout = (adc_value * VCC) / ADC_RESOLUTION;
   double Rth = (VCC * R2 / Vout) - R2;
 
@@ -76,15 +82,18 @@ double readTemp() {
   return tempCelsius;
 }
 
-int readControlMode() {
-  int controlMode = ThingSpeak.readFloatField(CHANNEL_ID, F2_MODE);
-  Serial.println("Control Mode: " + String(controlMode));
-  return controlMode;
+void readControlMode() {
+  long startTime = millis();
+  int reading = ThingSpeak.readFloatField(CHANNEL_ID, F2_MODE);
+  Serial.println("Control Mode reading: " + String(reading));
+  long timeTaken = millis() - startTime;
+  Serial.println("Time taken: " + String(timeTaken));
+  if (timeTaken < 5000){
+    controlMode = reading;
+  }
 }
 
-boolean controlRelay(double temp, int controlMode) {
-  boolean isHeatingOn;
-  
+boolean controlRelay(double temp) {
   if (controlMode == 0){
     isHeatingOn = false;
   }
@@ -93,6 +102,7 @@ boolean controlRelay(double temp, int controlMode) {
   }
   else if (controlMode == 2){
     int controlTemp = ThingSpeak.readFloatField(CHANNEL_ID, F3_CONTROL_TEMP);
+    Serial.println("Control Temp: " + String(controlTemp));
     if (temp < controlTemp) {
       isHeatingOn = true;
     } 
@@ -102,15 +112,13 @@ boolean controlRelay(double temp, int controlMode) {
   }
 
   if (isHeatingOn == true) {
-      digitalWrite(LED_PIN, HIGH);
+      digitalWrite(RELAY_PIN, HIGH);
   } else {
-      digitalWrite(LED_PIN, LOW);
+      digitalWrite(RELAY_PIN, LOW);
   }
-
-  return isHeatingOn;
 }
 
-void uploadToServer(double temp, boolean isHeatingOn) {
+void uploadToServer(double temp) {
   String isHeatingOnStr = isHeatingOn ? "1" : "0";
   ThingSpeak.setField(F1_LIVE_TEMP, String(temp));
   ThingSpeak.setField(F4_IS_HEATING_ON, isHeatingOnStr);

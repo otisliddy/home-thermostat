@@ -31,7 +31,6 @@ const thingSpeakControlTempUrl = 'https://api.thingspeak.com/channels/879596/fie
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakWriteControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
-// Have to use a proxyLambda because can't invoke StepFunctions directly: https://forums.aws.amazon.com/thread.jspa?threadID=248225
 const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiate-home-thermostat-state-machine-test';
 const stateTableName = 'thermostatState-test';
 const scheduleTableName = 'scheduledActivity-test';
@@ -102,7 +101,7 @@ class App extends Component {
     console.log('Changing to fixed temp');
     this.setState({ status: { mode: 'Changing to Fixed Temp...' } })
 
-    thingSpeak(thingSpeakWriteControlTempUrl + modes.FIXED_TEMP.ordinal, () => {
+    thingSpeak(thingSpeakWriteControlTempUrl + selection, () => {
       const status = statusHelper.createStatus(modes.FIXED_TEMP, { temp: selection });
       this.persistStatus(status);
     });
