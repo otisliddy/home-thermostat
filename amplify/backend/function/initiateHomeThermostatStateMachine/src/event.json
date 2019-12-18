@@ -1,5 +1,5 @@
 {
-  "cancelExisting": true,
+  "cancelExisting": false,
   "workflowInput": {
     "stateChanges": [
       {

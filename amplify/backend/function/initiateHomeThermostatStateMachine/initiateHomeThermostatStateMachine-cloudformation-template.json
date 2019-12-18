@@ -28,12 +28,12 @@
 				"FunctionName": {
 					"Fn::If": [
 						"ShouldNotCreateEnvResources",
-						"initiate-home-thermostat-state-machine",
+						"initiateHomeThermostatStateMachine",
 						{
 							"Fn::Join": [
 								"",
 								[
-									"initiate-home-thermostat-state-machine",
+									"initiateHomeThermostatStateMachine",
 									"-",
 									{
 										"Ref": "env"
@@ -63,7 +63,7 @@
 				"Timeout": "25",
 				"Code": {
 					"S3Bucket": "home-thermostat-test-20191029230339-deployment",
-					"S3Key": "amplify-builds/initiateHomeThermostatStateMachine-4f33574f46425172464c-build.zip"
+					"S3Key": "amplify-builds/initiateHomeThermostatStateMachine-3265544e4a426448654b-build.zip"
 				}
 			}
 		},
@@ -73,12 +73,12 @@
 				"RoleName": {
 					"Fn::If": [
 						"ShouldNotCreateEnvResources",
-						"homethermostatLambdaRole53475acd",
+						"homethermostatLambdaRolee5871a0d",
 						{
 							"Fn::Join": [
 								"",
 								[
-									"homethermostatLambdaRole53475acd",
+									"homethermostatLambdaRolee5871a0d",
 									"-",
 									{
 										"Ref": "env"
@@ -126,8 +126,7 @@
 							"Action": [
 								"logs:CreateLogGroup",
 								"logs:CreateLogStream",
-								"logs:PutLogEvents",
-								"states:StartExecution"
+								"logs:PutLogEvents"
 							],
 							"Resource": {
 								"Fn::Sub": [

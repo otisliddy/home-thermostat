@@ -26,3 +26,9 @@ it('should create a status from fixed temp mode', function () {
     expect(status.temp).to.be.equal(12);
     expect(status).not.to.have.property('schedule');
 });
+
+it('should create a status with execution ARN', function () {
+    const status = statusHelper.createStatus(modes.ON,  {duration: 900, executionArn: '"ARN"' });
+    expect(status).to.have.property('executionArn');
+    expect(status.executionArn).to.be.equal('ARN');
+});

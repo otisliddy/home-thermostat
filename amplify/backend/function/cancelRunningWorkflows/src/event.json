@@ -1,5 +1,3 @@
 {
-    "key1": "value1",
-    "key2": "value2",
-    "key3": "value3"
+    "executionArn": "arn:aws:states:eu-west-1:056402289766:execution:HomeThermostatStateMachine:ScheduleHeatChange-62ce56aa-5df3-428c-b525-bc3bde0c6677"
 }

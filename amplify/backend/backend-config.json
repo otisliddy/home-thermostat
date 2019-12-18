@@ -1,6 +1,6 @@
 {
 	"function": {
-		"changeHeatingState": {
+		"cancelRunningWorkflows": {
 			"service": "Lambda",
 			"providerPlugin": "awscloudformation",
 			"build": true
@@ -10,7 +10,7 @@
 			"providerPlugin": "awscloudformation",
 			"build": true
 		},
-		"cancelRunningWorkflows": {
+		"changeHeatingState": {
 			"service": "Lambda",
 			"providerPlugin": "awscloudformation",
 			"build": true

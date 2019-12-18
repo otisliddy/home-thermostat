@@ -28,12 +28,12 @@
 				"FunctionName": {
 					"Fn::If": [
 						"ShouldNotCreateEnvResources",
-						"change-heating-state",
+						"changeHeatingState",
 						{
 							"Fn::Join": [
 								"",
 								[
-									"change-heating-state",
+									"changeHeatingState",
 									"-",
 									{
 										"Ref": "env"
@@ -63,7 +63,7 @@
 				"Timeout": "25",
 				"Code": {
 					"S3Bucket": "home-thermostat-test-20191029230339-deployment",
-					"S3Key": "amplify-builds/changeHeatingState-63492b763162714a7a71-build.zip"
+					"S3Key": "amplify-builds/changeHeatingState-376c6944633349423763-build.zip"
 				}
 			}
 		},
@@ -73,12 +73,12 @@
 				"RoleName": {
 					"Fn::If": [
 						"ShouldNotCreateEnvResources",
-						"homethermostatLambdaRoleaa8d3d33",
+						"homethermostatLambdaRoleb482250a",
 						{
 							"Fn::Join": [
 								"",
 								[
-									"homethermostatLambdaRoleaa8d3d33",
+									"homethermostatLambdaRoleb482250a",
 									"-",
 									{
 										"Ref": "env"

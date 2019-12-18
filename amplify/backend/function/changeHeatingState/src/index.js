@@ -1,8 +1,10 @@
 const { modes, fromOrdinal, DynamodbClient, statusHelper } = require('./home-thermostat-common');
 const Client = require('node-rest-client').Client;
+const AWS = require('aws-sdk');
+AWS.config.region = 'eu-west-1';
 
 const restClient = new Client();
-const dynamodbClient = new DynamodbClient();
+const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 const stateTableName = 'thermostatState-test';

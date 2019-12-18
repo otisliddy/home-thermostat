@@ -1,6 +1,9 @@
 const { StepFunctionsClient } = require('./home-thermostat-common');
+const AWS = require('aws-sdk');
+AWS.config.update({ region: 'eu-west-1' });
+const StepFunctions = require('aws-sdk/clients/stepfunctions');
 
-const stepFunctions = new StepFunctionsClient();
+const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
 
 exports.handler = function (event, context) {
   console.log('Event: ', event);
@@ -8,12 +11,12 @@ exports.handler = function (event, context) {
   Promise.resolve()
     .then(() => {
       if (event.cancelExisting === true) {
-        return stepFunctions.stopCurrentExecutions();
+        return stepFunctionsClient.stopCurrentExecutions();
       }
     })
-    .then(() => stepFunctions.startNewExecution(event.workflowInput))
-    .then((resolve) => {
-      context.done(null, resolve);
+    .then(() => stepFunctionsClient.startNewExecution(event.workflowInput))
+    .then((executionArn) => {
+      context.done(null, executionArn);
     })
     .catch((error) => {
       context.fail(null, error);

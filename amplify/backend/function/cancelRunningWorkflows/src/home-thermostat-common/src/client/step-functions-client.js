@@ -21,31 +21,22 @@ class StepFunctionsClient {
                     console.log(error, error.stack);
                     reject(error);
                 } else {
-                    resolve('Workflow started');
+                    resolve(data.executionArn);
                 }
             });
         });
     }
 
-    stopCurrentExecutions() {
+    stopRunningExecution(executionArn) {
         return new Promise((resolve, reject) => {
-            return this.stepFunctions.listExecutions({ stateMachineArn: stateMachineArn, statusFilter: 'RUNNING' }, function (err, data) {
-                console.log('Execution objects: ', data);
-                if (data === null || data.executions.length === 0) {
-                    return resolve();
+            this.stepFunctions.stopExecution({ executionArn: executionArn }, function (error, data) {
+                if (error) {
+                    console.log('Error received trying to stop execution', error.stack);
+                    reject();
+                } else {
+                    console.log('Stopped execution. Response: ', data);
+                    resolve();
                 }
-                data.executions.forEach(function (execution) {
-                    console.log('Stopping execution ' + execution.executionArn);
-                    this.stepFunctions.stopExecution({ executionArn: execution.executionArn }, function (error, data) {
-                        if (error) {
-                            console.log('Error received trying to stop execution', error.stack);
-                            reject();
-                        } else {
-                            console.log('Stopped execution. Response: ', data);
-                            resolve();
-                        }
-                    });
-                });
             });
         });
     }

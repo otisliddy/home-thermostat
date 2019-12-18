@@ -1,13 +1,8 @@
 {
   "stateChanges": [
     {
-      "waitSeconds": 24,
-      "mode": "2",
-      "temp": "26"
-    },
-    {
-      "waitSeconds": 60,
+      "waitSeconds": 2,
       "mode": "0"
     }
   ]
-  }
+}

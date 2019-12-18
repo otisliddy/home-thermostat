@@ -8,11 +8,9 @@ import ScheduleModal from './component/schedule-modal';
 import thingSpeak from './util/rest-handler';
 import AWS from './config/aws-config';
 
-import StepFunctions from 'aws-sdk/clients/stepfunctions';
 import {
   modes,
   DynamodbClient,
-  StepFunctionsClient,
   statusHelper
 } from 'home-thermostat-common';
 import {
@@ -24,6 +22,9 @@ import {
 /*TODO: - convert components to functional components
 - Write unit tests for generateAgoString
 - Migrate to AWS IoT
+- Change to AWS.DynamoDB.DocumentClient()
+- Copy home-thermostat-common into node_modules
+- Move table names to constants
 */
 
 const thingSpeakModeUrl = 'https://api.thingspeak.com/channels/879596/fields/2/last.json';
@@ -31,13 +32,12 @@ const thingSpeakControlTempUrl = 'https://api.thingspeak.com/channels/879596/fie
 const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=';
 const thingSpeakWriteControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
-const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiate-home-thermostat-state-machine-test';
+const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiateHomeThermostatStateMachine-test';
 const stateTableName = 'thermostatState-test';
 const scheduleTableName = 'scheduledActivity-test';
 
 const lambda = new AWS.Lambda({ apiVersion: '2015-03-31' });
 const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
-const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
 
 class App extends Component {
   constructor(props) {
@@ -54,18 +54,12 @@ class App extends Component {
   }
 
   syncStatus() {
-    dynamodbClient.scan(scheduleTableName).then((rawStatuses) => {
-      const statuses = [];
-      rawStatuses.forEach(status => {
-        statuses.push(statusHelper.dynamoItemToStatus(status));
-      });
+    dynamodbClient.getScheduledActivity().then((statuses) => {
+      console.log(statuses);
       this.setState({ scheduledActivity: statuses });
     });
 
-    dynamodbClient.scan(stateTableName).then((statusesRaw) => {
-      const statusesSorted = statusesRaw.sort((a, b) => (parseInt(a.since.N) < parseInt(b.since.N)) ? 1 : -1);
-      const statuses = statusHelper.findStatusesConsideringDuplicates(statusesSorted);
-
+    dynamodbClient.getStatuses().then((statuses) => {
       if (statuses.length === 0) {
         return this.setState({ status: { mode: modes.OFF.val } });
       }
@@ -117,10 +111,10 @@ class App extends Component {
     this.setState({ status: { mode: 'Turning On...' } })
 
     const params = this.createInitiateWorkflowParams(0, selection);
-    lambda.invoke(params, function (error) {
+    lambda.invoke(params, function (error, data) {
       if (!error) {
         thingSpeak(thingSpeakModeWriteUrl + modes.ON.ordinal, () => {
-          const status = statusHelper.createStatus(modes.ON, { duration: duration });
+          const status = statusHelper.createStatus(modes.ON, { duration: duration, executionArn: data.Payload });
           this.persistStatus(status);
         });
       } else {
@@ -143,9 +137,12 @@ class App extends Component {
     this.setState({ scheduleModalShow: false });
 
     const params = this.createInitiateWorkflowParams(hoursMinsToSecondsFromNow(startTime), hoursMinsToSeconds(duration), temp);
-    lambda.invoke(params, function (error) {
+    lambda.invoke(params, function (error, data) {
       if (!error) {
-        const options = { duration: hoursMinsToSeconds(duration) };
+        const options = {
+          duration: hoursMinsToSeconds(duration),
+          executionArn: data.Payload
+        };
         if (this.state.scheduleModalMode === modes.FIXED_TEMP) {
           options.temp = temp;
         }
@@ -194,18 +191,15 @@ class App extends Component {
 
   handleScheduleCancelAll() {
     console.log('otis');
-    dynamodbClient.scan(scheduleTableName).then((statuses) => {
-      statuses.forEach(status => {
-        dynamodbClient.delete(scheduleTableName, statusHelper.dynamoItemToStatus(status).since);
-      });
-    });
-    stepFunctionsClient.stopCurrentExecutions().then(() => {
-      this.handleOff();
-    });
+    // dynamodbClient.scan(scheduleTableName).then((statuses) => {
+    //   statuses.forEach(status => {
+    //     dynamodbClient.delete(scheduleTableName, statusHelper.dynamoItemToStatus(status).since);
+    //   });
+    // });
+    //cancel wf lambda
   }
 
   persistStatus(status) {
-    console.log(status);
     dynamodbClient.insertStatus(stateTableName, status).then(() => {
       this.setState({ status: status });
       this.syncStatus();

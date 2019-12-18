@@ -4,7 +4,8 @@ const sinonChai = require("sinon-chai");
 chai.use(sinonChai);
 const expect = chai.expect;
 
-const { DynamodbClient, modes, AWS } = require('..');
+const { DynamodbClient, modes } = require('..');
+const AWS = require('aws-sdk');
 const dynamodbStub = new AWS.DynamoDB();
 const dynamodbClient = new DynamodbClient(dynamodbStub);
 

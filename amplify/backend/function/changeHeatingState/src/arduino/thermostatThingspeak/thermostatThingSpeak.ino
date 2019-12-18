@@ -69,7 +69,7 @@ void loop() {
 
 double readTemp() {
   double adc_value = analogRead(TEMP_PIN);
-  adc_value = isHeatingOn == false ? adc_value : adc_value / 1.102;
+  adc_value = isHeatingOn == false ? adc_value : adc_value / 1.095;
   
   double Vout = (adc_value * VCC) / ADC_RESOLUTION;
   double Rth = (VCC * R2 / Vout) - R2;
