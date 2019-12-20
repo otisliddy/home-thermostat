@@ -14,7 +14,6 @@ class StepFunctionsClient {
                 input: JSON.stringify(workflowInput),
                 name: 'ScheduleHeatChange-' + uuidv4(),
             };
-            console.log('Params:', params);
 
             return this.stepFunctions.startExecution(params, function (error, data) {
                 if (error) {

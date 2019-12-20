@@ -1,6 +1,6 @@
-import StepFunctions from 'aws-sdk/clients/stepfunctions';
-import { StepFunctionsClient } from 'home-thermostat-common';
-import AWS from 'aws-sdk';
+const StepFunctions = require('aws-sdk/clients/stepfunctions');
+const { StepFunctionsClient } = require('./home-thermostat-common');
+const AWS = require('aws-sdk');
 
 AWS.config.region = 'eu-west-1';
 const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());

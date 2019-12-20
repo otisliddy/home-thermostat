@@ -40,7 +40,7 @@ class PreviousActivity extends Component {
 
         return (
             <div className='activity'>
-                <span>Previous Activity &nbsp;</span>
+                <span>Activity last &nbsp;</span>
                 <select className='activity-dropdown' onChange={this.handleChange.bind(this)} value={this.state.days}>
                     {options}
                 </select>

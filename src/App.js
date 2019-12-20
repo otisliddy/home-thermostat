@@ -7,7 +7,6 @@ import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
 import thingSpeak from './util/rest-handler';
 import AWS from './config/aws-config';
-
 import {
   modes,
   DynamodbClient,
@@ -33,6 +32,7 @@ const thingSpeakModeWriteUrl = 'https://api.thingspeak.com/update?api_key=QERCNN
 const thingSpeakWriteControlTempUrl = 'https://api.thingspeak.com/update?api_key=QERCNNZO451W8OA3&field2=2&field3=';
 
 const initiateWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:initiateHomeThermostatStateMachine-test';
+const cancelRunningWorfklowsLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:cancelRunningWorkflows-test';
 const stateTableName = 'thermostatState-test';
 const scheduleTableName = 'scheduledActivity-test';
 
@@ -55,7 +55,6 @@ class App extends Component {
 
   syncStatus() {
     dynamodbClient.getScheduledActivity().then((statuses) => {
-      console.log(statuses);
       this.setState({ scheduledActivity: statuses });
     });
 
@@ -93,7 +92,9 @@ class App extends Component {
     }
 
     console.log('Changing to fixed temp');
-    this.setState({ status: { mode: 'Changing to Fixed Temp...' } })
+    this.setState({ status: { mode: 'Changing to Fixed Temp...' } });
+
+    this.cancelCurrentStatusExecution();
 
     thingSpeak(thingSpeakWriteControlTempUrl + selection, () => {
       const status = statusHelper.createStatus(modes.FIXED_TEMP, { temp: selection });
@@ -108,7 +109,9 @@ class App extends Component {
     const duration = selection;
 
     console.log('Turning on');
-    this.setState({ status: { mode: 'Turning On...' } })
+    this.setState({ status: { mode: 'Turning On...' } });
+
+    this.cancelCurrentStatusExecution();
 
     const params = this.createInitiateWorkflowParams(0, selection);
     lambda.invoke(params, function (error, data) {
@@ -124,8 +127,10 @@ class App extends Component {
   }
 
   handleOff() {
-    console.log('Turning off');
-    this.setState({ status: { mode: 'Turning Off...' } })
+    console.log('Turning off', this.state.status);
+    this.setState({ status: { mode: 'Turning Off...' } });
+
+    this.cancelCurrentStatusExecution();
 
     thingSpeak(thingSpeakModeWriteUrl + modes.OFF.ordinal, () => {
       const status = statusHelper.createStatus(modes.OFF);
@@ -148,8 +153,8 @@ class App extends Component {
         }
         const status = statusHelper.createStatus(this.state.scheduleModalMode, options, hoursMinsToDate(startTime));
         dynamodbClient.insertStatus(scheduleTableName, status).then(() => {
-          this.syncStatus();
           console.log('Scheduled successfully');
+          this.syncStatus();
         });
       } else {
         alert('Let Otis know that error 16 occurred');
@@ -189,14 +194,29 @@ class App extends Component {
     this.setState({ scheduleModalShow: true, scheduleModalMode: mode });
   }
 
-  handleScheduleCancelAll() {
-    console.log('otis');
-    // dynamodbClient.scan(scheduleTableName).then((statuses) => {
-    //   statuses.forEach(status => {
-    //     dynamodbClient.delete(scheduleTableName, statusHelper.dynamoItemToStatus(status).since);
-    //   });
-    // });
-    //cancel wf lambda
+  handleScheduleDelete(status) {
+    this.cancelExecution(status.executionArn);
+    dynamodbClient.delete(scheduleTableName, status.since)
+      .then(() => {
+        this.syncStatus();
+      });
+  }
+
+  cancelExecution(executionArn) {
+    const payload = {
+      executionArn: executionArn
+    };
+    const params = {
+      FunctionName: cancelRunningWorfklowsLambdaArn,
+      Payload: JSON.stringify(payload)
+    };
+    lambda.invoke(params, function (error) {
+      if (!error) {
+        console.log('Deleted successfully');
+      } else {
+        alert('Let Otis know that error 17 occurred');
+      }
+    });
   }
 
   persistStatus(status) {
@@ -204,6 +224,12 @@ class App extends Component {
       this.setState({ status: status });
       this.syncStatus();
     });
+  }
+
+  cancelCurrentStatusExecution() {
+    if (this.state.status.executionArn) {
+      this.cancelExecution(this.state.status.executionArn, () => { })
+    }
   }
 
   render() {
@@ -218,7 +244,7 @@ class App extends Component {
             handleFixedTemp={this.handleFixedTemp.bind(this)}
             handleProfile={this.handleProfile.bind(this)} />
           <ScheduledActivity statuses={this.state.scheduledActivity}
-            handleCancelAll={this.handleScheduleCancelAll.bind(this)} />
+            handleDelete={this.handleScheduleDelete.bind(this)} />
           <PreviousActivity statuses={this.state.statuses} />
         </div>
         <ScheduleModal

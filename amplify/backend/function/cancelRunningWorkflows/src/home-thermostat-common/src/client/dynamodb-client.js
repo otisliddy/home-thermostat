@@ -44,7 +44,6 @@ class DynamodbClient {
                 }
             }
         };
-        console.log(params);
         return new Promise((resolve, reject) => {
             this.dynamodb.deleteItem(params, (err, data) => {
                 if (err) {

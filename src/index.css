@@ -208,10 +208,6 @@ div[disabled]
   font-weight: bold;
 }
 
-#schedule-modal td {
-  padding-bottom: 5px;
-}
-
 #schedule-modal td:nth-child(1) {
   text-align: right;
 }
@@ -246,4 +242,10 @@ div[disabled]
   color: var(--color-font);
   padding: 10px;
   margin: 5px 5px 15px;
+}
+
+.delete-icon {
+  fill: var(--color-font);
+  vertical-align: bottom;
+  cursor: pointer;
 }
