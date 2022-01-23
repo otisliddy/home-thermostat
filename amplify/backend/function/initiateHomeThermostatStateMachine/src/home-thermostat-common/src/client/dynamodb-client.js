@@ -1,10 +1,15 @@
+const statusHelper = require('../util/status-helper');
+const stateTableName = 'thermostatState-test';
+const scheduleTableName = 'scheduledActivity-test';
+
 class DynamodbClient {
     constructor(dynamodb) {
         this.dynamodb = dynamodb;
     }
-    scan(tableName) {
+
+    getStatuses() {
         const params = {
-            TableName: tableName
+            TableName: stateTableName
         }
 
         return new Promise((resolve, reject) => {
@@ -12,7 +17,33 @@ class DynamodbClient {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(data.Items);
+                    let statuses = [];
+                    data.Items.forEach(status => {
+                        statuses.push(statusHelper.dynamoItemToStatus(status));
+                    });
+                    statuses = statuses.sort((a, b) => (parseInt(a.since) < parseInt(b.since)) ? 1 : -1);
+                    statuses = statusHelper.findStatusesConsideringDuplicates(statuses);
+                    resolve(statuses);
+                }
+            });
+        });
+    }
+
+    getScheduledActivity() {
+        const params = {
+            TableName: scheduleTableName
+        }
+
+        return new Promise((resolve, reject) => {
+            this.dynamodb.scan(params, (err, data) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    let statuses = [];
+                    data.Items.forEach(status => {
+                        statuses.push(statusHelper.dynamoItemToStatus(status));
+                    });
+                    resolve(statuses);
                 }
             });
         });
@@ -44,7 +75,6 @@ class DynamodbClient {
                 }
             }
         };
-        console.log(params);
         return new Promise((resolve, reject) => {
             this.dynamodb.deleteItem(params, (err, data) => {
                 if (err) {

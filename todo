@@ -1,0 +1,15 @@
+gitignore certs
+Commit Arduino code
+Upgrade to Node 14
+Upgrade minimum package versions
+Delete handleTempUpdate Lambda
+Delete -test suffix of Lambdas
+Delete files under public dir
+Clean up DynamoDB CloudFormation
+Clean up IAM Roles
+Restrict IAM Roles
+Amplify
+  - Delete temperature code?
+Enable Amplify auto-build
+
+Clean up IAM Users

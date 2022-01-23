@@ -14,6 +14,10 @@ statusHelper.createStatus = (mode, options, since = new Date()) => {
         status.temp = options.temp;
     }
 
+    if (options && options.executionArn) {
+        status.executionArn = options.executionArn.replace(/^"/, '').replace(/"$/, '');
+    }
+
     return status;
 }
 
@@ -33,13 +37,13 @@ statusHelper.findStatusesConsideringDuplicates = (items) => {
 }
 
 statusHelper.findStatusConsideringDuplicates = (items, startingIndex) => {
-    const startingStatus = statusHelper.dynamoItemToStatus(items[startingIndex]);
+    const startingStatus = items[startingIndex];
     if (startingIndex >= items.length-1) {
         return { status: startingStatus, indexReached: items.length-1 };
     }
 
     for (let i = startingIndex + 1; i < items.length; i++) {
-        const nextStatus = statusHelper.dynamoItemToStatus(items[i]);
+        const nextStatus = items[i];
         if (nextStatus.mode === startingStatus.mode &&
             nextStatus.temp === startingStatus.temp &&
             nextStatus.schedule === startingStatus.schedule) {
