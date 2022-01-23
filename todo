@@ -10,6 +10,17 @@ Clean up IAM Roles
 Restrict IAM Roles
 Amplify
   - Delete temperature code?
+  - in Console try setting service role
 Enable Amplify auto-build
+yarn.lock needed?
 
 Clean up IAM Users
+
+# Minor stories
+Hover delete 
+Cursor on buttons
+Let Otis know that error 13 occurred
+
+# Features
+# Explore Amplify https://aws.amazon.com/amplify/ 
+Authenticate with login
