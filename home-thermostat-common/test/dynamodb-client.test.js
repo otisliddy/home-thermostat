@@ -27,7 +27,7 @@ describe('Scan', function () {
     });
 
     it('no items returns empty array', function (done) {
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(0);
             done();
         }).catch((err) => done(err));
@@ -36,7 +36,7 @@ describe('Scan', function () {
     it('only one item', function (done) {
         addDataItem(modes.ON, 1000, { until: 2000 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(1);
             expect(statuses[0]).to.eql({ mode: modes.ON.val, since: 1000, until: 2000 });
             done();
@@ -47,7 +47,7 @@ describe('Scan', function () {
         addDataItem(modes.ON, 900, { until: 2000 });
         addDataItem(modes.OFF, 1000);
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.OFF.val, since: 1000 });
             expect(statuses[1]).to.eql({ mode: modes.ON.val, since: 900, until: 2000 });
@@ -59,7 +59,7 @@ describe('Scan', function () {
         addDataItem(modes.OFF, 1000);
         addDataItem(modes.ON, 900, { until: 2000 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.OFF.val, since: 1000 });
             expect(statuses[1]).to.eql({ mode: modes.ON.val, since: 900, until: 2000 });
@@ -71,7 +71,7 @@ describe('Scan', function () {
         addDataItem(modes.OFF, 900);
         addDataItem(modes.ON, 1000, { until: 2000 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.ON.val, since: 1000, until: 2000 });
             expect(statuses[1]).to.eql({ mode: modes.OFF.val, since: 900 });
@@ -83,7 +83,7 @@ describe('Scan', function () {
         addDataItem(modes.FIXED_TEMP, 1000, { temp: 19 });
         addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(1);
             expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1000, temp: 19 });
             done();
@@ -94,7 +94,7 @@ describe('Scan', function () {
         addDataItem(modes.FIXED_TEMP, 900, { temp: 18 });
         addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, temp: 19 });
             expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 900, temp: 18 });
@@ -107,7 +107,7 @@ describe('Scan', function () {
         addDataItem(modes.ON, 900, { until: 2000 });
         addDataItem(modes.OFF, 1100);
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.OFF.val, since: 1000 });
             expect(statuses[1]).to.eql({ mode: modes.ON.val, since: 900, until: 2000 });
@@ -120,7 +120,7 @@ describe('Scan', function () {
         addDataItem(modes.ON, 1000, { until: 2000 });
         addDataItem(modes.ON, 1100, { until: 2100 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
             expect(statuses[1]).to.eql({ mode: modes.OFF.val, since: 900 });
@@ -133,7 +133,7 @@ describe('Scan', function () {
         addDataItem(modes.ON, 1000, { until: 2100 });
         addDataItem(modes.OFF, 1100);
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(3);
             expect(statuses[0]).to.eql({ mode: modes.OFF.val, since: 1100 });
             expect(statuses[1]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
@@ -147,7 +147,7 @@ describe('Scan', function () {
         addDataItem(modes.ON, 1000, { until: 2100 });
         addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(3);
             expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, temp: 19 });
             expect(statuses[1]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
@@ -161,7 +161,7 @@ describe('Scan', function () {
         addDataItem(modes.FIXED_TEMP, 1000, { temp: 19 });
         addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(2);
             expect(statuses[0]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1000, temp: 19 });
             expect(statuses[1]).to.eql({ mode: modes.OFF.val, since: 900 });
@@ -174,7 +174,7 @@ describe('Scan', function () {
         addDataItem(modes.FIXED_TEMP, 1100, { temp: 19 });
         addDataItem(modes.ON, 1200, { until: 2100 });
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(3);
             expect(statuses[0]).to.eql({ mode: modes.ON.val, since: 1200, until: 2100 });
             expect(statuses[1]).to.eql({ mode: modes.FIXED_TEMP.val, since: 1100, temp: 19 });
@@ -194,7 +194,7 @@ describe('Scan', function () {
         addDataItem(modes.OFF, 1700);
         addDataItem(modes.OFF, 1800);
 
-        dynamodbClient.scan().then((statuses) => {
+        dynamodbClient.getScheduledActivity().then((statuses) => {
             expect(statuses).to.have.length(5);
             expect(statuses[4]).to.eql({ mode: modes.ON.val, since: 1000, until: 2100 });
             expect(statuses[3]).to.eql({ mode: modes.OFF.val, since: 1300 });

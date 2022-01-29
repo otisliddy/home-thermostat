@@ -1,16 +1,12 @@
-gitignore certs
-Commit Arduino code
-Upgrade to Node 14
 Upgrade minimum package versions
+Sort out expireAt for both tables
 Delete handleTempUpdate Lambda
+Rename mode to state
 Delete -test suffix of Lambdas
 Delete files under public dir
-Clean up DynamoDB CloudFormation
-Clean up IAM Roles
-Restrict IAM Roles
 Amplify
   - Delete temperature code?
-  - in Console try setting service role
+  - Research hooks
 Enable Amplify auto-build
 yarn.lock needed?
 

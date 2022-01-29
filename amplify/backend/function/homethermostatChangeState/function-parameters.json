@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "storage": {
+      "deviceState": [
+        "create"
+      ]
+    }
+  },
+  "lambdaLayers": []
+}

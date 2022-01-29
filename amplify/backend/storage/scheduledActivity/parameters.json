@@ -1,5 +1,0 @@
-{
-    "tableName": "scheduledActivity",
-    "partitionKeyName": "since",
-    "partitionKeyType": "N"
-}

@@ -1,19 +1,19 @@
 {
   "name": "home-thermostat",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@aws-amplify/api": "^1.2.2",
-    "@aws-amplify/cli": "^3.17.0",
-    "@aws-amplify/pubsub": "^1.2.2",
+    "@aws-amplify/api": "^4.0.30",
+    "@aws-amplify/cli": "^7.6.12",
+    "@aws-amplify/pubsub": "^4.2.6",
+    "aws-amplify": "^4.3.12",
+    "aws-amplify-react": "^5.1.9",
+    "dateformat": "^5.0.2",
     "home-thermostat-common": "file:./home-thermostat-common",
-    "aws-amplify": "^1.2.4",
-    "aws-amplify-react": "^2.5.2",
-    "dateformat": "^3.0.3",
-    "react": "^16.10.2",
-    "react-dom": "^16.10.2",
-    "react-scripts": "3.2.0",
-    "uuid": "^3.3.3"
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-scripts": "5.0.0",
+    "uuid": "^8.3.2"
   },
   "scripts": {
     "start": "react-scripts start",

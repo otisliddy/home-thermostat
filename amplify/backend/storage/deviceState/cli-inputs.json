@@ -1,0 +1,14 @@
+{
+  "resourceName": "deviceState",
+  "tableName": "device-state",
+  "partitionKey": {
+    "fieldName": "device",
+    "fieldType": "string"
+  },
+  "sortKey": {
+    "fieldName": "since",
+    "fieldType": "number"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

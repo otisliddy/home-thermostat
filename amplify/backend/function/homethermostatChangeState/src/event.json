@@ -1,0 +1,8 @@
+{
+  "stateChanges": [
+    {
+      "waitSeconds": 2,
+      "mode": "On"
+    }
+  ]
+}

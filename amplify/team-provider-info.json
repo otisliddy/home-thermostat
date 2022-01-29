@@ -1,14 +1,23 @@
 {
-    "test": {
-        "awscloudformation": {
-            "AuthRoleName": "home-thermostat-test-20191029230339-authRole",
-            "UnauthRoleArn": "arn:aws:iam::056402289766:role/home-thermostat-test-20191029230339-unauthRole",
-            "AuthRoleArn": "arn:aws:iam::056402289766:role/home-thermostat-test-20191029230339-authRole",
-            "Region": "eu-west-1",
-            "DeploymentBucketName": "home-thermostat-test-20191029230339-deployment",
-            "UnauthRoleName": "home-thermostat-test-20191029230339-unauthRole",
-            "StackName": "home-thermostat-test-20191029230339",
-            "StackId": "arn:aws:cloudformation:eu-west-1:056402289766:stack/home-thermostat-test-20191029230339/58499740-faa0-11e9-8b01-068f31eb76a4"
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-homethermostat-dev-195748-authRole",
+      "UnauthRoleArn": "arn:aws:iam::056402289766:role/amplify-homethermostat-dev-195748-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::056402289766:role/amplify-homethermostat-dev-195748-authRole",
+      "Region": "eu-west-1",
+      "DeploymentBucketName": "amplify-homethermostat-dev-195748-deployment",
+      "UnauthRoleName": "amplify-homethermostat-dev-195748-unauthRole",
+      "StackName": "amplify-homethermostat-dev-195748",
+      "StackId": "arn:aws:cloudformation:eu-west-1:056402289766:stack/amplify-homethermostat-dev-195748/c013e440-813d-11ec-b7dd-0663d5f2b905",
+      "AmplifyAppId": "d87xk17uyl51x"
+    },
+    "categories": {
+      "function": {
+        "homethermostatChangeState": {
+          "deploymentBucketName": "amplify-homethermostat-dev-195748-deployment",
+          "s3Key": "amplify-builds/homethermostatChangeState-6b624a432f636f6e3544-build.zip"
         }
+      }
     }
+  }
 }
