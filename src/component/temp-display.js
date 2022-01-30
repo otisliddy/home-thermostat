@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
-import thingSpeak from '../util/rest-handler';
 
-const weatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=Barna,ie&appid=7844d2a2a82bb813b21942e3c97eb67a';
-const thingSpeakTempUrl = 'https://api.thingspeak.com/channels/879596/fields/1/last.json';
+const weatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather?q=Loughrea,ie&appid=7844d2a2a82bb813b21942e3c97eb67a';
 
 class TempDisplay extends Component {
     constructor(props) {
@@ -15,16 +13,15 @@ class TempDisplay extends Component {
         const tempCelsius = Math.round((data.main.temp - 273.15) * 2) / 2;
         this.setState({ tempOutside: tempCelsius });
       });
-      thingSpeak(thingSpeakTempUrl, (res) => {
-        const tempRounded = Math.round(res.field1 * 10) / 10;
-        this.setState({ tempInside: tempRounded });
-      });
+      // get inside temp
+      // const tempRounded = Math.round(res.field1 * 10) / 10;
+      // this.setState({ tempInside: tempRounded });
     }
   
     render() {
       return (
         <div id='temp-display'>
-          <div id='temp-inside'>{this.state.tempInside}<sup>&#8451;</sup></div>
+          {/* <div id='temp-inside'>{this.state.tempInside}<sup>&#8451;</sup></div> */}
           <div id='temp-outside'>{this.state.tempOutside}<sup>&#8451;</sup> Outside</div>
         </div>
       );

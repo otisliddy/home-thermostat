@@ -5,12 +5,12 @@ const statusHelper = {};
 */
 statusHelper.createStatus = (mode, options, since = new Date()) => {
     const status = { mode: mode };
-    status.since = since.getTime();
+    status.since = since.getSeconds();
 
     if (options && options.duration) {
         const until = new Date(status.since);
         until.setSeconds(until.getSeconds() + options.duration);
-        status.until = until.getTime();
+        status.until = until.getSeconds();
     }
 
     if (options && options.temp) {

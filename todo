@@ -1,23 +1,17 @@
-Upgrade minimum package versions
-Delete s3 bucket
-Sort out expireAt for both tables
-Delete handleTempUpdate Lambda
-Rename mode to state
-Delete -test suffix of Lambdas
+Delete rogue Amplify apps
+Create cancelRunningWorkflows Lambda
+fromOrdinal needed?
 Delete files under public dir
-Amplify
-  - Delete temperature code?
-  - Research hooks
-Enable Amplify auto-build
-yarn.lock needed?
-
 Clean up IAM Users
 
 # Minor stories
 Hover delete 
 Cursor on buttons
-Let Otis know that error 13 occurred
+Display connected flag
 
 # Features
-# Explore Amplify https://aws.amazon.com/amplify/ 
+Listen to MQTT update in front end
+Explore Amplify https://aws.amazon.com/amplify/ 
 Authenticate with login
+Setup Daily profiles using cron + eventBridge + Lambda
+Decouple BE and FE references to resources. CloudMap?

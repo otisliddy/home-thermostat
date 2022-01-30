@@ -4,7 +4,6 @@ import { modes } from 'home-thermostat-common';
 class ScheduleModal extends Component {
     constructor(props) {
         super(props);
-        this.temp = React.createRef();
         this.time = React.createRef();
         this.duration = React.createRef();
     }
@@ -18,8 +17,7 @@ class ScheduleModal extends Component {
         }
         this.props.handleConfirm(
             this.time.current.value,
-            this.duration.current.value,
-            this.temp.current.value
+            this.duration.current.value
         );
     };
 
@@ -28,18 +26,10 @@ class ScheduleModal extends Component {
             return null;
         }
 
-        const displayTemp = modes.FIXED_TEMP.val === this.props.mode.val ? {} : { display: 'none' };
-
         return (
             <div id='schedule-modal'>
                 <div>
                     <div>
-                        <label className='schedule-modal-mode'>
-                            <input type='radio' name='mode' value={modes.FIXED_TEMP.val}
-                                checked={modes.FIXED_TEMP.val === this.props.mode.val}
-                                onChange={this.props.handleModeChange} />
-                            <span className='schedule-modal-label'>{modes.FIXED_TEMP.val}</span>
-                        </label>
                         <label className='schedule-modal-mode'>
                             <input type='radio' name='mode' value={modes.ON.val}
                                 checked={modes.ON.val === this.props.mode.val}
@@ -49,12 +39,6 @@ class ScheduleModal extends Component {
                     </div>
                     <table>
                         <tbody>
-                            <tr style={displayTemp}>
-                                <td className='schedule-modal-label'>Temp:</td>
-                                <td>
-                                    <input ref={this.temp} type='number' min='0' max='30' defaultValue='17' />
-                                </td>
-                            </tr>
                             <tr>
                                 <td className='schedule-modal-label'>Start Time:</td>
                                 <td>

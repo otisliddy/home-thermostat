@@ -62,12 +62,8 @@ class PreviousActivity extends Component {
             until = 'now'
         }
 
-        let mode = status.mode;
-        if (status.temp) {
-            mode += ` at ${status.temp}°`;
-        }
         rows.push(<tr key={status.since}>
-            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activity-mode'>{mode}</td>
+            <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activity-mode'>{status.mode}</td>
         </tr>);
     }
 }
