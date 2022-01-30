@@ -1,4 +1,5 @@
 Upgrade minimum package versions
+Delete s3 bucket
 Sort out expireAt for both tables
 Delete handleTempUpdate Lambda
 Rename mode to state

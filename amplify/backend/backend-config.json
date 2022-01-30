@@ -22,5 +22,23 @@
         }
       ]
     }
+  },
+  "custom": {
+    "scheduleStateChange": {
+      "service": "customCloudformation",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatChangeState",
+          "attributes": [
+            "Name",
+            "Arn",
+            "Region",
+            "LambdaExecutionRole"
+          ]
+        }
+      ]
+    }
   }
 }

@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  {"createdOn":"Mac","createdBy":"Amplify","createdWith":"7.6.12","stackType":"custom-customCloudformation","metadata":{}}
+Parameters:
+  env:
+    Type: String
+  functionhomethermostatChangeStateName:
+    Type: String
+  functionhomethermostatChangeStateArn:
+    Type: String
+  functionhomethermostatChangeStateRegion:
+    Type: String
+  functionhomethermostatChangeStateLambdaExecutionRole:
+    Type: String
+  stepFunctionsS3Bucket:
+    Type: String
+    Default: arn:aws:s3:::otisliddy-homethermostat
+Resources:
+  scheduleHeatingChangeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: scheduleHeatingChangeInvokeLambda
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - Ref: functionhomethermostatChangeStateArn
+  scheduleHeatingChange:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - scheduleHeatingChangeRole
+          - Arn
+      StateMachineName: schedule-heating-change
+      Definition:
+        Comment: State machine for changing the heating mode of the Arduino.
+        StartAt: Wait
+        States:
+          Wait:
+            Type: Wait
+            SecondsPath: $[0].waitSeconds
+            Next: ChangeState
+          ChangeState:
+            Type: Task
+            Resource:
+              Ref: functionhomethermostatChangeStateArn
+            ResultPath: AWS::NoValue
+            OutputPath: $[1:]
+            Next: ContinueExecuting?
+          ContinueExecuting?:
+            Type: Choice
+            Choices:
+              - Variable: $[0]
+                IsPresent: true
+                Next: Wait
+            Default: Done
+          Done:
+            Type: Pass
+            End: true

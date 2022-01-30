@@ -89,13 +89,14 @@ class DynamodbClient {
 }
 
 function statusToDynamoItem(status) {
-    const item = { device: 'ht-main' };
-
+    status.device = 'ht-main';
+    
     const expireAt = new Date();
     const sixMonths = 1000 * 60 * 60 * 24 * 183;
     expireAt.setTime(status.since + sixMonths);
     status.expireAt = expireAt.getTime();
 
+    const item = {};
     for (const key in status) {
         if (status.hasOwnProperty(key)) {
             if (isNaN(status[key])) {
