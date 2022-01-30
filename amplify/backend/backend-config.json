@@ -21,10 +21,15 @@
           ]
         }
       ]
+    },
+    "homethermostatStartScheduleStateChange": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
     }
   },
   "custom": {
-    "scheduleStateChange": {
+    "homethermostatScheduleStateChange": {
       "service": "customCloudformation",
       "providerPlugin": "awscloudformation",
       "dependsOn": [

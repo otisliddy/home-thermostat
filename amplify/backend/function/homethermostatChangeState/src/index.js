@@ -14,7 +14,7 @@ const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
 const iotData = new AWS.IotData({ endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com' });
 const stateTableName = process.env.STORAGE_DEVICESTATE_NAME;
 
-exports.handler = function (event, context) { // TODO don't pass in context and instead return response = {statusCode: 200,body:  JSON.stringify('Hello from Lambda!')}
+exports.handler = function (event, context) { // TODO don't pass context and instead return response = {statusCode: 200,body:  JSON.stringify('Hello from Lambda!')}
     console.log('Payload: ', event);
     const mode = event[0].mode;
     const params = { thingName: 'ht-main', payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
@@ -34,7 +34,7 @@ function handleSuccessfulResponse(event, mode, context) {
 
     const status = statusHelper.createStatus(mode, statusOptions); //mode + until
     dynamodbClient.insertStatus(stateTableName, status)
-        .then(() => context.done(null));
+        .then(() => context.done(null, event));
 }
 
 function buildStatusOptions(event) {
