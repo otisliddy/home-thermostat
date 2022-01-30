@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "{\"createdOn\":\"Mac REM\",\"createdBy\":\"Amplify\",\"createdWith\":\"7.6.12\",\"stackType\":\"function-Lambda\",\"metadata\":{}}",
+  "Description": "{\"createdOn\":\"Mac\",\"createdBy\":\"Amplify\",\"createdWith\":\"7.6.12\",\"stackType\":\"function-Lambda\",\"metadata\":{}}",
   "Parameters": {
     "CloudWatchRule": {
       "Type": "String",
@@ -16,17 +16,17 @@
     "s3Key": {
       "Type": "String"
     },
-    "storagedeviceStateName": {
+    "storagehomethermostatDeviceStateName": {
       "Type": "String",
-      "Default": "storagedeviceStateName"
+      "Default": "storagehomethermostatDeviceStateName"
     },
-    "storagedeviceStateArn": {
+    "storagehomethermostatDeviceStateArn": {
       "Type": "String",
-      "Default": "storagedeviceStateArn"
+      "Default": "storagehomethermostatDeviceStateArn"
     },
-    "storagedeviceStateStreamArn": {
+    "storagehomethermostatDeviceStateStreamArn": {
       "Type": "String",
-      "Default": "storagedeviceStateStreamArn"
+      "Default": "storagehomethermostatDeviceStateStreamArn"
     }
   },
   "Conditions": {
@@ -82,14 +82,14 @@
             "REGION": {
               "Ref": "AWS::Region"
             },
-            "STORAGE_DEVICESTATE_NAME": {
-              "Ref": "storagedeviceStateName"
+            "STORAGE_HOMETHERMOSTATDEVICESTATE_NAME": {
+              "Ref": "storagehomethermostatDeviceStateName"
             },
-            "STORAGE_DEVICESTATE_ARN": {
-              "Ref": "storagedeviceStateArn"
+            "STORAGE_HOMETHERMOSTATDEVICESTATE_ARN": {
+              "Ref": "storagehomethermostatDeviceStateArn"
             },
-            "STORAGE_DEVICESTATE_STREAMARN": {
-              "Ref": "storagedeviceStateStreamArn"
+            "STORAGE_HOMETHERMOSTATDEVICESTATE_STREAMARN": {
+              "Ref": "storagehomethermostatDeviceStateStreamArn"
             }
           }
         },
@@ -110,12 +110,12 @@
         "RoleName": {
           "Fn::If": [
             "ShouldNotCreateEnvResources",
-            "homethermostatLambdaRole56b801a6",
+            "homethermostatLambdaRoledf6b66d0",
             {
               "Fn::Join": [
                 "",
                 [
-                  "homethermostatLambdaRole56b801a6",
+                  "homethermostatLambdaRoledf6b66d0",
                   "-",
                   {
                     "Ref": "env"
@@ -210,14 +210,14 @@
               ],
               "Resource": [
                 {
-                  "Ref": "storagedeviceStateArn"
+                  "Ref": "storagehomethermostatDeviceStateArn"
                 },
                 {
                   "Fn::Join": [
                     "/",
                     [
                       {
-                        "Ref": "storagedeviceStateArn"
+                        "Ref": "storagehomethermostatDeviceStateArn"
                       },
                       "index/*"
                     ]

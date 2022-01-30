@@ -1,15 +1,24 @@
+const { StepFunctionsClient } = require('./home-thermostat-common');
+const AWS = require('aws-sdk');
+AWS.config.update({ region: process.env.REGION });
+const StepFunctions = require('aws-sdk/clients/stepfunctions');
 
+const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
 
-exports.handler = async (event) => {
-    // TODO implement
-    const response = {
-        statusCode: 200,
-    //  Uncomment below to enable CORS requests
-    //  headers: {
-    //      "Access-Control-Allow-Origin": "*",
-    //      "Access-Control-Allow-Headers": "*"
-    //  }, 
-        body: JSON.stringify('Hello from Lambda!'),
-    };
-    return response;
+exports.handler = function (event, context) {
+  console.log('Event: ', event);
+
+  Promise.resolve()
+    .then(() => {
+      if (event.cancelExisting === true) {
+        return stepFunctionsClient.stopCurrentExecutions();
+      }
+    })
+    .then(() => stepFunctionsClient.startNewExecution(event.stateMachineInput))
+    .then((executionArn) => {
+      context.done(null, executionArn);
+    })
+    .catch((error) => {
+      context.fail(null, error);
+    });
 };

@@ -1,25 +1,25 @@
 {
   "dev": {
     "awscloudformation": {
-      "AuthRoleName": "amplify-homethermostat-dev-195748-authRole",
-      "UnauthRoleArn": "arn:aws:iam::056402289766:role/amplify-homethermostat-dev-195748-unauthRole",
-      "AuthRoleArn": "arn:aws:iam::056402289766:role/amplify-homethermostat-dev-195748-authRole",
+      "AuthRoleName": "amplify-homethermostat-dev-182043-authRole",
+      "UnauthRoleArn": "arn:aws:iam::056402289766:role/amplify-homethermostat-dev-182043-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::056402289766:role/amplify-homethermostat-dev-182043-authRole",
       "Region": "eu-west-1",
-      "DeploymentBucketName": "amplify-homethermostat-dev-195748-deployment",
-      "UnauthRoleName": "amplify-homethermostat-dev-195748-unauthRole",
-      "StackName": "amplify-homethermostat-dev-195748",
-      "StackId": "arn:aws:cloudformation:eu-west-1:056402289766:stack/amplify-homethermostat-dev-195748/c013e440-813d-11ec-b7dd-0663d5f2b905",
-      "AmplifyAppId": "d87xk17uyl51x"
+      "DeploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
+      "UnauthRoleName": "amplify-homethermostat-dev-182043-unauthRole",
+      "StackName": "amplify-homethermostat-dev-182043",
+      "StackId": "arn:aws:cloudformation:eu-west-1:056402289766:stack/amplify-homethermostat-dev-182043/57f5f760-81f9-11ec-948f-0a8869c1c799",
+      "AmplifyAppId": "d36tefta7j8ppr"
     },
     "categories": {
       "function": {
         "homethermostatChangeState": {
-          "deploymentBucketName": "amplify-homethermostat-dev-195748-deployment",
-          "s3Key": "amplify-builds/homethermostatChangeState-693538304652794a326e-build.zip"
+          "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
+          "s3Key": "amplify-builds/homethermostatChangeState-374632755439724c4a56-build.zip"
         },
         "homethermostatStartScheduleStateChange": {
-          "deploymentBucketName": "amplify-homethermostat-dev-195748-deployment",
-          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-46452f4e326e636a3476-build.zip"
+          "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
+          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-5465354b35684a594342-build.zip"
         }
       }
     }

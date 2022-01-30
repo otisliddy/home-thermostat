@@ -1,6 +1,6 @@
 {
   "storage": {
-    "deviceState": {
+    "homethermostatDeviceState": {
       "service": "DynamoDB",
       "providerPlugin": "awscloudformation"
     }
@@ -13,7 +13,7 @@
       "dependsOn": [
         {
           "category": "storage",
-          "resourceName": "deviceState",
+          "resourceName": "homethermostatDeviceState",
           "attributes": [
             "Name",
             "Arn",
@@ -25,7 +25,8 @@
     "homethermostatStartScheduleStateChange": {
       "build": true,
       "providerPlugin": "awscloudformation",
-      "service": "Lambda"
+      "service": "Lambda",
+      "dependsOn": []
     }
   },
   "custom": {

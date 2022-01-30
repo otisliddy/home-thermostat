@@ -1,11 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
   {"createdOn":"Mac","createdBy":"Amplify","createdWith":"7.6.12","stackType":"custom-customCloudformation","metadata":{}}
-Metadata:
-  cfn-lint:
-    config:
-      ignore_checks:
-        - E0000
 Parameters:
   env:
     Type: String
@@ -74,8 +69,3 @@ Resources:
           Done:
             Type: Pass
             End: true
-    Metadata:
-      cfn-lint:
-        config:
-          ignore_checks:
-            - E0000

@@ -1,6 +1,6 @@
 export type AmplifyDependentResourcesAttributes = {
     "storage": {
-        "deviceState": {
+        "homethermostatDeviceState": {
             "Name": "string",
             "Arn": "string",
             "StreamArn": "string",

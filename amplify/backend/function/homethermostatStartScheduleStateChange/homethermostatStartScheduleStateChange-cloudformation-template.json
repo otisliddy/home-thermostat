@@ -89,12 +89,12 @@
         "RoleName": {
           "Fn::If": [
             "ShouldNotCreateEnvResources",
-            "homethermostatLambdaRole3eab9208",
+            "homethermostatLambdaRoleae370acd",
             {
               "Fn::Join": [
                 "",
                 [
-                  "homethermostatLambdaRole3eab9208",
+                  "homethermostatLambdaRoleae370acd",
                   "-",
                   {
                     "Ref": "env"

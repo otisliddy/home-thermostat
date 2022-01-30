@@ -1,6 +1,6 @@
 {
-  "resourceName": "deviceState",
-  "tableName": "device-state",
+  "resourceName": "homethermostatDeviceState",
+  "tableName": "homethermostat-device-state",
   "partitionKey": {
     "fieldName": "device",
     "fieldType": "string"
