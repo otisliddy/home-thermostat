@@ -1,19 +1,25 @@
 const statusHelper = require('../util/status-helper');
-const stateTableName = 'thermostatState-test';
-const scheduleTableName = 'scheduledActivity-test';
+const stateTableName = 'homethermostat-device-state-dev';
+const scheduleTableName = 'homethermostat-scheduled-activity-dev';
 
 class DynamodbClient {
     constructor(dynamodb) {
         this.dynamodb = dynamodb;
     }
 
-    getStatuses() {
+    getStatuses(since) {
+        console.log(since)
         const params = {
-            TableName: stateTableName
+            TableName: stateTableName,
+            KeyConditionExpression: 'device = :device and since > :since',
+            ExpressionAttributeValues: {
+                ':device': { S: 'ht-main' },
+                ':since': { N: `${since}` }
+            }
         }
 
         return new Promise((resolve, reject) => {
-            this.dynamodb.scan(params, (err, data) => {
+            this.dynamodb.query(params, (err, data) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -90,11 +96,11 @@ class DynamodbClient {
 
 function statusToDynamoItem(status) {
     status.device = 'ht-main';
-    
+
     const expireAt = new Date();
-    const sixMonths = 1000 * 60 * 60 * 24 * 183;
-    expireAt.setTime(status.since + sixMonths);
-    status.expireAt = expireAt.getTime();
+    const threeYears = 60 * 60 * 24 * 365 * 3;
+    expireAt.setTime((status.since + threeYears) * 1000);
+    status.expireAt = Math.round(expireAt.getTime() / 1000);
 
     const item = {};
     for (const key in status) {

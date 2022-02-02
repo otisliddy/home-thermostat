@@ -6,9 +6,11 @@ import PreviousActivity from './component/previous-activity';
 import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
 import AWS from './config/aws-config';
+import StepFunctions from 'aws-sdk/clients/stepfunctions';
 import {
   modes,
   DynamodbClient,
+  StepFunctionsClient,
   statusHelper
 } from 'home-thermostat-common';
 import {
@@ -28,11 +30,12 @@ import {
 
 const startScheduleStateChangeLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:homethermostatStartScheduleStateChange-dev';
 const cancelRunningWorfklowsLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:homethermostatCancelRunningWorkflow-test';
-const stateTableName = 'homethermostat-device-state';
-const scheduleTableName = 'homethermostat-scheduled-activity';
+const stateTableName = 'homethermostat-device-state-dev';
+const scheduleTableName = 'homethermostat-scheduled-activity-dev';
 
 const lambda = new AWS.Lambda(); // TODO { apiVersion: '2015-03-31' }
 const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
+const stepFunctionsClient = new StepFunctionsClient(new AWS.StepFunctions());
 const iot = new AWS.IotData({ endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com' })
 
 class App extends Component {
@@ -57,10 +60,8 @@ class App extends Component {
         this.setState({ status: { mode: reportedMode.val } });
 
         dynamodbClient.getStatuses(relativeDateAgo(30)).then((statuses) => {
-          console.log('statuses[0]', statuses[0]);
-          console.log('this.state.status', this.state.status);
           if (statuses.length > 0 && statuses[0] !== this.state.status) {
-            alert('Let Otis know that error 12 occurred');
+            //alert('Let Otis know that error 12 occurred');
             return this.setState({ status: { mode: modes.OFF.val } });
           }
           console.log('statuses', statuses);
@@ -89,14 +90,14 @@ class App extends Component {
     console.log('Turning on');
     this.setState({ status: { mode: 'Turning On...' } });
 
-    this.cancelCurrentStatusExecution();
+    //this.cancelCurrentStatusExecution();
 
     const params = this.createScheduleStateChangeParams(0, selection);
     lambda.invoke(params, function (error, data) {
       if (!error) {
-        // set desired status on, though this seems to be unneeded
-        // const status = statusHelper.createStatus(modes.ON, { duration: duration, executionArn: data.Payload });
-        // this.persistStatus(status);
+        console.log('turned on OK', data)
+        const status = statusHelper.createStatus(modes.ON, { duration: duration, executionArn: data.Payload });
+        this.persistStatus(status);
       } else {
         alert('Let Otis know that error 15 occurred');
       }
@@ -107,11 +108,20 @@ class App extends Component {
     console.log('Turning off', this.state.status);
     this.setState({ status: { mode: 'Turning Off...' } });
 
-    this.cancelCurrentStatusExecution();
+    //this.cancelCurrentStatusExecution();
 
-    // set desired status off
-    // const status = statusHelper.createStatus(modes.OFF);
-    // this.persistStatus(status);
+    const params = { thingName: 'ht-main', payload: `{"state":{"desired":{"on":false}}}}` };
+
+    iot.updateThingShadow(params, function (err, data) {
+      if (err) {
+        console.log(err, err.stack);
+      }
+      else {
+        const status = statusHelper.createStatus(modes.OFF);
+        this.persistStatus(status);
+      }
+    }.bind(this));
+
   }
 
   handleScheduleConfirm(startTime, duration) {
@@ -138,11 +148,11 @@ class App extends Component {
   createScheduleStateChangeParams(startSecondsFromNow, durationSeconds) {
     const stateChange = { waitSeconds: startSecondsFromNow, mode: this.state.scheduleModalMode.val };
     const payload = {
-      workflowInput: [],
+      stateMachineInput: [],
       cancelExisting: false
     };
-    payload.workflowInput.push(stateChange);
-    payload.workflowInput.push({ waitSeconds: durationSeconds, mode: modes.OFF.val });
+    payload.stateMachineInput.push(stateChange);
+    payload.stateMachineInput.push({ waitSeconds: durationSeconds, mode: modes.OFF.val });
 
     const params = {
       FunctionName: startScheduleStateChangeLambdaArn,
@@ -170,23 +180,13 @@ class App extends Component {
   }
 
   cancelExecution(executionArn) {
-    const payload = {
-      executionArn: executionArn
-    };
-    const params = {
-      FunctionName: cancelRunningWorfklowsLambdaArn,
-      Payload: JSON.stringify(payload)
-    };
-    lambda.invoke(params, function (error) {
-      if (!error) {
-        console.log('Deleted successfully');
-      } else {
-        alert('Let Otis know that error 17 occurred');
-      }
+    stepFunctionsClient.stopRunningExecution(executionArn).then(() => {
+      console.log('success');
     });
   }
 
   persistStatus(status) {
+    console.log('status', status);
     dynamodbClient.insertStatus(stateTableName, status).then(() => {
       this.setState({ status: status });
       this.syncStatus();

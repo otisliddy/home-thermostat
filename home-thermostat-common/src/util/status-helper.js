@@ -4,13 +4,13 @@ const statusHelper = {};
 * status: {mode, since, until, temp, schedule, executionArn}
 */
 statusHelper.createStatus = (mode, options, since = new Date()) => {
-    const status = { mode: mode };
-    status.since = since.getTime();
+    const status = { mode: mode.val };
+    status.since = Math.round(since.getTime() / 1000);
 
     if (options && options.duration) {
-        const until = new Date(status.since);
+        const until = new Date(since);
         until.setSeconds(until.getSeconds() + options.duration);
-        status.until = until.getTime();
+        status.until = Math.round(until.getTime() / 1000);
     }
 
     if (options && options.temp) {

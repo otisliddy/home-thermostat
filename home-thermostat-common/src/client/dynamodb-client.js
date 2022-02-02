@@ -8,21 +8,21 @@ class DynamodbClient {
     }
 
     getStatuses(since) {
+        console.log(since)
         const params = {
             TableName: stateTableName,
-            KeyConditionExpression: 'since > :since',
+            KeyConditionExpression: 'device = :device and since > :since',
             ExpressionAttributeValues: {
-                ':since': { N: `'${since}'` }
+                ':device': { S: 'ht-main' },
+                ':since': { N: `${since}` }
             }
         }
 
-        console.log('zzz1');
         return new Promise((resolve, reject) => {
             this.dynamodb.query(params, (err, data) => {
                 if (err) {
                     reject(err);
                 } else {
-                    console.log('zzz2');
                     let statuses = [];
                     data.Items.forEach(status => {
                         statuses.push(statusHelper.dynamoItemToStatus(status));
@@ -99,8 +99,8 @@ function statusToDynamoItem(status) {
 
     const expireAt = new Date();
     const threeYears = 60 * 60 * 24 * 365 * 3;
-    expireAt.setTime(status.since + threeYears);
-    status.expireAt = expireAt.getTime();
+    expireAt.setTime((status.since + threeYears) * 1000);
+    status.expireAt = Math.round(expireAt.getTime() / 1000);
 
     const item = {};
     for (const key in status) {

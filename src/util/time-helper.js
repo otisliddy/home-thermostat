@@ -41,9 +41,10 @@ function hoursMinsToDate(hoursMins) {
 
 function relativeDateAgo(daysAgo) {
   const date = new Date();
-  date.setTime(date.getTime() - daysAgo * 3600 * 24);
+  date.setTime(date.getTime() - daysAgo * 3600 * 24 * 1000);
+  console.log(Math.ceil(date.getTime() / 1000));
 
-  return date.getSeconds();
+  return Math.ceil(date.getTime() / 1000);
 }
 
 function generateTimeDiffText(dateMillis) {

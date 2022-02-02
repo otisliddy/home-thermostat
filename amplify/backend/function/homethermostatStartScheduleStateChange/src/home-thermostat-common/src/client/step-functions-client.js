@@ -5,11 +5,11 @@ class StepFunctionsClient {
         this.stepFunctions = stepFunctions;
     }
 
-    startNewExecution(workflowInput) {
+    startNewExecution(stateMachineInput) {
         return new Promise((resolve, reject) => {
             const params = {
                 stateMachineArn: stateMachineArn,
-                input: JSON.stringify(workflowInput),
+                input: JSON.stringify(stateMachineInput),
                 name: 'ScheduleHeatChange-' + makeId(10),
             };
             console.log('Params:', params);
