@@ -23,6 +23,7 @@ class PreviousActivity extends Component {
 
         const sinceDaysAgo = new Date();
         sinceDaysAgo.setTime(sinceDaysAgo.getTime() - this.state.days * 3600 * 24 * 1000);
+        const sinceDaysAgoEpochSeconds = sinceDaysAgo.getTime() / 1000;
 
         if (this.props.statuses) {
             for (let i = 0; i < this.props.statuses.length; i++) {
@@ -31,7 +32,7 @@ class PreviousActivity extends Component {
                     const nextStatus = i > 0 ? this.props.statuses[i - 1] : null;
                     this.addStatusRow(status, nextStatus, rows);
                 }
-                if (status.since < sinceDaysAgo) {
+                if (status.since < sinceDaysAgoEpochSeconds) {
                     break;
                 }
             }

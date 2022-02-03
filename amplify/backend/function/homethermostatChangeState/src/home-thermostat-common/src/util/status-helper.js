@@ -4,7 +4,7 @@ const statusHelper = {};
 * status: {mode, since, until, temp, schedule, executionArn}
 */
 statusHelper.createStatus = (mode, options, since = new Date()) => {
-    const status = { mode: mode.val };
+    const status = { mode: mode };
     status.since = Math.round(since.getTime() / 1000);
 
     if (options && options.duration) {

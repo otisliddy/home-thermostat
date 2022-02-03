@@ -1,10 +1,10 @@
 [
   {
-    "waitSeconds": 2,
+    "waitSeconds": 0,
     "mode": "On"
   },
   {
-    "waitSeconds": 10,
+    "waitSeconds": 300,
     "mode": "Off"
   }
 ]

@@ -1,7 +1,7 @@
 import dateformat from 'dateformat';
 
-function toFormattedDate(dateMillis) {
-  const date = new Date(dateMillis);
+function toFormattedDate(dateSeconds) {
+  const date = new Date(dateSeconds * 1000);
   const oneDayAgo = new Date();
   oneDayAgo.setDate(oneDayAgo.getDate() - 1);
   if (date < oneDayAgo) {
@@ -42,15 +42,14 @@ function hoursMinsToDate(hoursMins) {
 function relativeDateAgo(daysAgo) {
   const date = new Date();
   date.setTime(date.getTime() - daysAgo * 3600 * 24 * 1000);
-  console.log(Math.ceil(date.getTime() / 1000));
 
   return Math.ceil(date.getTime() / 1000);
 }
 
-function generateTimeDiffText(dateMillis) {
+function generateTimeDiffText(dateSeconds) {
   let diffText = '';
   let leadingSpace = '';
-  const date = new Date(dateMillis);
+  const date = new Date(dateSeconds * 1000);
   let secondsDiff = Math.abs((new Date().getTime() - date.getTime()) / 1000);
   if (secondsDiff > 3600 * 24) {
     const days = Math.floor(secondsDiff / (3600 * 24));

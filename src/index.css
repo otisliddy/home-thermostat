@@ -63,6 +63,14 @@ div[disabled]
   font-size: 24px;
 }
 
+.status .connected-true{
+  color: green;
+}
+
+.status .connected-false{
+  color: red;
+}
+
 /* Select Mode */
 
 #select-mode {

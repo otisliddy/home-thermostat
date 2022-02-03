@@ -16,7 +16,7 @@ const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 
 exports.handler = function (event, context) { // TODO don't pass context and instead return response = {statusCode: 200,body:  JSON.stringify('Hello from Lambda!')}
     console.log('Payload: ', event);
-    const mode = event[0].mode;
+    const mode = event.heatingChanges[0].mode;
     const params = { thingName: 'ht-main', payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
 
     iotData.updateThingShadow(params, function (err, data) {
@@ -34,13 +34,14 @@ function handleSuccessfulResponse(event, mode, context) {
 
     const status = statusHelper.createStatus(mode, statusOptions); //mode + until
     dynamodbClient.insertStatus(stateTableName, status)
-        .then(() => context.done(null, event));
+        .then(() => context.done(null, event.heatingChanges));
 }
 
 function buildStatusOptions(event) {
     const statusOptions = {};
-    if (event.length > 1 && event[1].waitSeconds) {
+    if (event.length > 1 && event.heatingChanges[1].waitSeconds) {
         statusOptions.duration = event[1].waitSeconds;
     }
+    statusOptions.executionArn = event.executionArn;
     return statusOptions;
 }

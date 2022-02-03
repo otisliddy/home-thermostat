@@ -18,10 +18,13 @@ class Status extends Component {
       };
     });
 
+    const connectedText = this.props.connected ? "Heating Connected" : "Heating not connected";
+
     return (
       <div className='status'>
         <div className='mode'>Status: {mode}</div>
         <div className='since'>{since}</div>
+        <div className={`connected-${this.props.connected}`}>{connectedText}</div>
       </div>
     );
   }

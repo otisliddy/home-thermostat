@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   {"createdOn":"Mac","createdBy":"Amplify","createdWith":"7.6.12","stackType":"custom-customCloudformation","metadata":{}}
 Parameters:
@@ -56,6 +56,9 @@ Resources:
             Type: Task
             Resource:
               Ref: functionhomethermostatChangeStateArn
+            Parameters:
+              executionArn.$: $$.Execution.Id
+              heatingChanges.$: $
             ResultPath: $
             OutputPath: $[1:]
             Next: ContinueExecuting?

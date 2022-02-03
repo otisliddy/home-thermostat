@@ -8,7 +8,6 @@ class DynamodbClient {
     }
 
     getStatuses(since) {
-        console.log(since)
         const params = {
             TableName: stateTableName,
             KeyConditionExpression: 'device = :device and since > :since',
