@@ -15,7 +15,7 @@
       "function": {
         "homethermostatChangeState": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatChangeState-4a782b492b4e4a504843-build.zip"
+          "s3Key": "amplify-builds/homethermostatChangeState-5a55733738624b4a7341-build.zip"
         },
         "homethermostatStartScheduleStateChange": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",

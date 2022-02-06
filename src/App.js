@@ -50,8 +50,12 @@ class App extends Component {
     this.syncStatus();
   }
 
+  /**
+   * Compares the reported status from the Arduino to the status from DynamoDB. If they match, the current state is set
+   * and true is returned. If the states don't match or there is an error, false is returned.
+   */
   syncStatus() {
-    iot.getThingShadow({ thingName: 'ht-main' }, function (error, data) {
+    return iot.getThingShadow({ thingName: 'ht-main' }, function (error, data) {
       if (!error) {
         const jsonResponse = JSON.parse(data.payload);
         const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
@@ -63,18 +67,34 @@ class App extends Component {
             this.setState({ statuses: statuses });
             if (statuses[0].mode !== this.state.status.mode) {
               console.log('Mismatch between reported status and DynamoDB');
+              return false;
             }
-            return this.setState({ status: statuses[0] });
+            this.setState({ status: statuses[0] });
+            console.log('qqq2');
+            return Promise.resolve(true);
           }
+          console.log('qqq3');
+          return false;
         });
       } else {
-        alert('Let Otis know that error 11 occurred');
+        console.log('Error returned by IOT getThingShadow', error);
+        return false;
       }
     }.bind(this));
 
     // dynamodbClient.getScheduledActivity().then((statuses) => {
     //   this.setState({ scheduledActivity: statuses });
     // });
+  }
+
+  syncStatusWait() {
+    let statusSynced = false;
+    while (!statusSynced) {
+      statusSynced = this.syncStatus().then(synced => {
+        console.log('synced=', statusSynced);
+        return synced;
+      });
+    }
   }
 
   handleProfile() {
@@ -205,6 +225,7 @@ class App extends Component {
   render() {
     return (
       <div>
+        <button onClick={this.syncStatusWait.bind(this)}></button>
         <div disabled={this.state.scheduleModalShow}>
           <TempDisplay />
           <Status status={this.state.status} connected={this.state.connected} />

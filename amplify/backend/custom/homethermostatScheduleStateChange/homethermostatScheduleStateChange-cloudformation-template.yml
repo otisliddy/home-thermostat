@@ -60,7 +60,7 @@ Resources:
               executionArn.$: $$.Execution.Id
               heatingChanges.$: $
             ResultPath: $
-            OutputPath: $[1:]
+            OutputPath: $.heatingChanges[1:]
             Next: ContinueExecuting?
           ContinueExecuting?:
             Type: Choice

@@ -34,13 +34,13 @@ function handleSuccessfulResponse(event, mode, context) {
 
     const status = statusHelper.createStatus(mode, statusOptions); //mode + until
     dynamodbClient.insertStatus(stateTableName, status)
-        .then(() => context.done(null, event.heatingChanges));
+        .then(() => context.done(null, event));
 }
 
 function buildStatusOptions(event) {
     const statusOptions = {};
-    if (event.length > 1 && event.heatingChanges[1].waitSeconds) {
-        statusOptions.duration = event[1].waitSeconds;
+    if (event.heatingChanges.length > 1 && event.heatingChanges[1].waitSeconds) {
+        statusOptions.duration = event.heatingChanges[1].waitSeconds;
     }
     statusOptions.executionArn = event.executionArn;
     return statusOptions;
