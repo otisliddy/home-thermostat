@@ -5,8 +5,4 @@ const modes = {
     OFF: { val: 'Off', ordinal: '0' },
 }
 
-const fromOrdinal = (ordinal) => {
-    return modes[Object.keys(modes).find(key => modes[key].ordinal === ordinal)];
-}
-
-module.exports = { modes, fromOrdinal };
+module.exports = { modes };
