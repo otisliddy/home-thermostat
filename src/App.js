@@ -40,7 +40,6 @@ class App extends Component {
     super(props);
     this.state = {
       status: { mode: 'Loading...' },
-      connected: false,
       scheduleModalShow: false,
       scheduleModalMode: modes.ON
     };
@@ -67,14 +66,9 @@ class App extends Component {
             this.setState({ statuses: statuses });
             if (statuses[0].mode !== this.state.status.mode) {
               console.log('Mismatch between reported status and DynamoDB');
-              return false;
             }
-            this.setState({ status: statuses[0] });
-            console.log('qqq2');
-            return Promise.resolve(true);
+            return this.setState({ status: statuses[0] });
           }
-          console.log('qqq3');
-          return false;
         });
       } else {
         console.log('Error returned by IOT getThingShadow', error);
@@ -85,16 +79,6 @@ class App extends Component {
     // dynamodbClient.getScheduledActivity().then((statuses) => {
     //   this.setState({ scheduledActivity: statuses });
     // });
-  }
-
-  syncStatusWait() {
-    let statusSynced = false;
-    while (!statusSynced) {
-      statusSynced = this.syncStatus().then(synced => {
-        console.log('synced=', statusSynced);
-        return synced;
-      });
-    }
   }
 
   handleProfile() {
@@ -225,7 +209,6 @@ class App extends Component {
   render() {
     return (
       <div>
-        <button onClick={this.syncStatusWait.bind(this)}></button>
         <div disabled={this.state.scheduleModalShow}>
           <TempDisplay />
           <Status status={this.state.status} connected={this.state.connected} />

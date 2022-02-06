@@ -1,10 +1,13 @@
-[
-  {
-    "waitSeconds": 0,
-    "mode": "On"
-  },
-  {
-    "waitSeconds": 300,
-    "mode": "Off"
-  }
-]
+{
+  "heatingChanges": [
+    {
+      "waitSeconds": 0,
+      "mode": "On"
+    },
+    {
+      "waitSeconds": 60,
+      "mode": "Off"
+    }
+  ],
+  "executionArn": "123"
+}
