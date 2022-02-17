@@ -29,14 +29,6 @@ class ScheduleModal extends Component {
         return (
             <div id='schedule-modal'>
                 <div>
-                    <div>
-                        <label className='schedule-modal-mode'>
-                            <input type='radio' name='mode' value={modes.ON.val}
-                                checked={modes.ON.val === this.props.mode.val}
-                                onChange={this.props.handleModeChange} />
-                            <span className='schedule-modal-label'>{modes.ON.val}</span>
-                        </label>
-                    </div>
                     <table>
                         <tbody>
                             <tr>

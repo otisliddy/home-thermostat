@@ -14,7 +14,7 @@ const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
 const iotData = new AWS.IotData({ endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com' });
 const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 
-exports.handler = function (event, context) { // TODO don't pass context and instead return response = {statusCode: 200,body:  JSON.stringify('Hello from Lambda!')}
+exports.handler = function (event, context) {
     console.log('Payload: ', event);
     const mode = event.heatingChanges[0].mode;
     const params = { thingName: 'ht-main', payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };

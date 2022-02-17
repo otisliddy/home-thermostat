@@ -1,5 +1,3 @@
-Loop for status after turned on/off, or add callback / MQTT client
-Don't show "Heating not connected" until known
 Add scheduled activity, also considering Daily Profiles for schema of tables 
 Delete rogue Amplify apps
 Create cancelRunningWorkflows Lambda

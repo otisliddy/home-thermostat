@@ -16,7 +16,7 @@ class ScheduledActivity extends Component {
     render() {
         const rows = [];
 
-        const now = new Date().getTime();
+        const now = new Date().getTime() / 1000;
         if (this.props.statuses) {
             for (let i = 0; i < this.props.statuses.length; i++) {
                 const status = this.props.statuses[i];
@@ -41,6 +41,5 @@ class ScheduledActivity extends Component {
         )
     }
 }
-//<button id='activity-cancel' onClick={this.props.handleCancelAll}>Cancel All</button>
 
 export default ScheduledActivity;

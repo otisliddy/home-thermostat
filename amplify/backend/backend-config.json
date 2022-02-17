@@ -3,6 +3,10 @@
     "homethermostatDeviceState": {
       "service": "DynamoDB",
       "providerPlugin": "awscloudformation"
+    },
+    "homethermostatScheduledActivity": {
+      "service": "DynamoDB",
+      "providerPlugin": "awscloudformation"
     }
   },
   "function": {

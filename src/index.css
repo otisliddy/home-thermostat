@@ -187,8 +187,8 @@ div[disabled]
   z-index: 1; /* Sit on top */
   top: 50%;
   left: 50%;
-  width: 200px; /* Full width */
-  height: 300px; /* Full height */
+  width: 200px;
+  height: 250px;
   overflow: auto;
   transform: translate(-50%, -50%);
   background-color: var(--color-modal);

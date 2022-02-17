@@ -9,6 +9,16 @@ export type AmplifyDependentResourcesAttributes = {
             "SortKeyName": "string",
             "SortKeyType": "string",
             "Region": "string"
+        },
+        "homethermostatScheduledActivity": {
+            "Name": "string",
+            "Arn": "string",
+            "StreamArn": "string",
+            "PartitionKeyName": "string",
+            "PartitionKeyType": "string",
+            "SortKeyName": "string",
+            "SortKeyType": "string",
+            "Region": "string"
         }
     },
     "function": {

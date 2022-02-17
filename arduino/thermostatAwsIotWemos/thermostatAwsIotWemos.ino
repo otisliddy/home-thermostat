@@ -50,7 +50,7 @@ void setupAws() {
 
   wifiClient.setCertificate(e6da39c342_certificate_pem_crt, e6da39c342_certificate_pem_crt_len);
   wifiClient.setPrivateKey(e6da39c342_private_pem_key, e6da39c342_private_pem_key_len);
-  wifiClient.setCACert(Amazon_Root_CA_1_pem, Amazon_Root_CA_1_pem_len); // TODO use role cert
+  wifiClient.setCACert(Amazon_Root_CA_1_pem, Amazon_Root_CA_1_pem_len);
 }
 
 void setCurrentTime() {

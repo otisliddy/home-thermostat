@@ -1,0 +1,14 @@
+{
+  "resourceName": "homethermostatScheduledActivity",
+  "tableName": "homethermostat-scheduled-activity",
+  "partitionKey": {
+    "fieldName": "device",
+    "fieldType": "string"
+  },
+  "sortKey": {
+    "fieldName": "since",
+    "fieldType": "number"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

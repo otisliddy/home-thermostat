@@ -22,7 +22,6 @@ import {
 - convert components to functional componentsx
 - Write unit tests for generateAgoString
 - Change to AWS.DynamoDB.DocumentClient()
-- Copy home-thermostat-common into node_modules
 - Move table names to constants
 */
 
@@ -40,8 +39,7 @@ class App extends Component {
     super(props);
     this.state = {
       status: { mode: 'Loading...' },
-      scheduleModalShow: false,
-      scheduleModalMode: modes.ON
+      scheduleModalShow: false
     };
   }
 
@@ -54,7 +52,7 @@ class App extends Component {
    * and true is returned. If the states don't match or there is an error, false is returned.
    */
   syncStatus() {
-    return iot.getThingShadow({ thingName: 'ht-main' }, function (error, data) {
+    iot.getThingShadow({ thingName: 'ht-main' }, function (error, data) {
       if (!error) {
         const jsonResponse = JSON.parse(data.payload);
         const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
@@ -71,14 +69,14 @@ class App extends Component {
           }
         });
       } else {
-        console.log('Error returned by IOT getThingShadow', error);
+        console.log('Error when getting thing shadow', error);
         return false;
       }
     }.bind(this));
 
-    // dynamodbClient.getScheduledActivity().then((statuses) => {
-    //   this.setState({ scheduledActivity: statuses });
-    // });
+    return dynamodbClient.getScheduledActivity().then((statuses) => {
+      this.setState({ scheduledActivity: statuses });
+    });
   }
 
   handleProfile() {
@@ -87,7 +85,7 @@ class App extends Component {
 
   handleOn(selection) {
     if (typeof selection === 'string' && selection.includes('schedule')) {
-      return this.setState({ scheduleModalShow: true, scheduleModalMode: modes.ON });
+      return this.setState({ scheduleModalShow: true });
     }
 
     console.log('Turning on');
@@ -99,7 +97,6 @@ class App extends Component {
     lambda.invoke(params, function (error, data) {
       if (!error) {
         const status = statusHelper.createStatus(modes.ON.val, { duration: selection, executionArn: data.Payload });
-        console.log('statusw', status);
         this.setState({ status: status });
       } else {
         alert('Let Otis know that error 15 occurred');
@@ -135,7 +132,7 @@ class App extends Component {
           duration: hoursMinsToSeconds(duration),
           executionArn: data.Payload
         };
-        const status = statusHelper.createStatus(this.state.scheduleModalMode.val, options, hoursMinsToDate(startTime));
+        const status = statusHelper.createStatus(modes.ON.val, options, hoursMinsToDate(startTime));
         dynamodbClient.insertStatus(scheduleTableName, status).then(() => {
           this.syncStatus();
         });
@@ -146,12 +143,11 @@ class App extends Component {
   }
 
   createScheduleStateChangeParams(startSecondsFromNow, durationSeconds) {
-    const stateChange = { waitSeconds: startSecondsFromNow, mode: this.state.scheduleModalMode.val };
     const payload = {
       stateMachineInput: [],
       cancelExisting: false
     };
-    payload.stateMachineInput.push(stateChange);
+    payload.stateMachineInput.push({ waitSeconds: startSecondsFromNow, mode: modes.ON.val });
     payload.stateMachineInput.push({ waitSeconds: durationSeconds, mode: modes.OFF.val });
 
     const params = {
@@ -166,29 +162,26 @@ class App extends Component {
     this.setState({ scheduleModalShow: false });
   }
 
-  handleScheduleModeChange(changeEvent) {
-    const mode = modes[Object.keys(modes).find(key => modes[key].val === changeEvent.target.value)];
-    this.setState({ scheduleModalShow: true, scheduleModalMode: mode });
-  }
-
   handleScheduleDelete(status) {
-    this.cancelExecution(status.executionArn).then(() => {
+    console.log(status.executionArn);
+    this.cancelExecution(status.executionArn, () => {
       dynamodbClient.delete(scheduleTableName, status.since)
-      .then(() => {
-        this.syncStatus();
-      });
+        .then(() => {
+          this.syncStatus();
+        });
     });
   }
 
-  cancelExecution(executionArn) {
+  cancelExecution(executionArn, callback) {
     const params = {
       FunctionName: cancelRunningWorkflowLambdaArn,
       Payload: JSON.stringify({ executionArn: executionArn })
     };
     return lambda.invoke(params, function (error, data) {
       if (!error) {
-        console.log('Cancelled existing heating change');
-      } else console.log(error);
+        console.log('Cancelled heating change');
+        callback();
+      } else console.log('Error cancelling scheduled heating change', error);
     });
   }
 
@@ -200,7 +193,6 @@ class App extends Component {
   }
 
   cancelCurrentStatusExecution() {
-    console.log('latest arn', this.state.status);
     if (this.state.status.executionArn) {
       this.cancelExecution(this.state.status.executionArn, () => { })
     }
@@ -222,8 +214,6 @@ class App extends Component {
         </div>
         <ScheduleModal
           show={this.state.scheduleModalShow}
-          mode={this.state.scheduleModalMode}
-          handleModeChange={this.handleScheduleModeChange.bind(this)}
           handleConfirm={this.handleScheduleConfirm.bind(this)}
           handleCancel={this.handleScheduleCancel.bind(this)}
         />

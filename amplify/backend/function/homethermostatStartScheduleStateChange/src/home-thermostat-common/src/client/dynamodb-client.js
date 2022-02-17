@@ -35,12 +35,18 @@ class DynamodbClient {
     }
 
     getScheduledActivity() {
+        const nowSeconds = new Date().getTime() / 1000;
         const params = {
-            TableName: scheduleTableName
+            TableName: scheduleTableName,
+            KeyConditionExpression: 'device = :device and since > :since',
+            ExpressionAttributeValues: {
+                ':device': { S: 'ht-main' },
+                ':since': { N: `${nowSeconds}` }
+            }
         }
 
         return new Promise((resolve, reject) => {
-            this.dynamodb.scan(params, (err, data) => {
+            this.dynamodb.query(params, (err, data) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -75,6 +81,9 @@ class DynamodbClient {
         const params = {
             TableName: tableName,
             Key: {
+                'device': {
+                    S: 'ht-main'
+                },
                 'since': {
                     N: since.toString()
                 }

@@ -23,7 +23,7 @@ class Status extends Component {
         <div className='mode'>Status: {mode}</div>
         <div className='since'>{since}</div>
         <div className={`connected-${this.props.connected}`} hidden={this.props.connected === undefined}>
-          {this.props.connected ? "Heating Connected" : "Heating not connected"}
+          {this.props.connected ? "Arduino Connected" : "Arduino not connected"}
         </div>
       </div>
     );
