@@ -1,15 +1,15 @@
 :root {
-  --color-background: #17252A;
-  --color-font: #FEFFFF;
-  --color-mode-selected: #2FE6DE;
-  --color-mode-unselected: rgb(187, 247, 244);
-  --color-modal: #FEFFFF;
+  --color-background: #2F1B41;
+  --color-modal: #BE3144;
+  --color-mode-unselected: #BE3144;
+  --color-mode-selected: #F05941;
+  --color-font: #feecec;
   --color-cancel: #ba3737;
 
   --button-border: 2px ridge;
   --button-border-radius: 3px;
 
-  --gap-between-comonents: 30px;
+  --gap-between-components: 30px;
 }
 
 * {
@@ -22,59 +22,53 @@ body {
   text-align: center;
 }
 
-button, input {
+button,
+input {
   border: 2px ridge;
   border-radius: 5px;
   background-color: var(--color-background);
 }
 
-div[disabled]
-{
+div[disabled] {
   pointer-events: none;
   opacity: 0.25;
 }
 
-/* Temp Display */
+/* Header */
 
-#temp-display {
+#header {
   padding: 10px;
   margin-bottom: 20px;
-}
-
-#temp-inside {
-  font-size: 42px;
+  position: relative;
 }
 
 #temp-outside {
   font-size: 12px;
 }
 
+#connected-status {
+  position: absolute;
+  right: 10px;
+}
+
 /* Status */
 
 .status {
-  margin-top: var(--gap-between-comonents);
+  margin-top: var(--gap-between-components);
 }
 
 .status * {
   color: var(--color-mode-selected);
 }
 
-.status .mode{
+.status .mode {
   font-size: 24px;
-}
-
-.status .connected-true{
-  color: green;
-}
-
-.status .connected-false{
-  color: red;
 }
 
 /* Select Mode */
 
 #select-mode {
-  margin-top: var(--gap-between-comonents);
+  margin-top: var(--gap-between-components);
 }
 
 .mode-dropdown {
@@ -96,17 +90,19 @@ div[disabled]
   border: none;
 }
 
-.mode-selected, .mode-selected * {
+.mode-selected,
+.mode-selected * {
   background-color: var(--color-mode-selected);
 }
 
-.mode-unselected, .mode-unselected * {
+.mode-unselected,
+.mode-unselected * {
   background-color: var(--color-mode-unselected);
 }
 
 .mode-content {
   position: absolute;
-  background-color: var(--color-modal);
+  background-color: var(--color-font);
   width: 100%;
   overflow: auto;
   z-index: 1;
@@ -120,7 +116,8 @@ div[disabled]
   cursor: pointer;
 }
 
-.mode-no-items, .mode-no-items button {
+.mode-no-items,
+.mode-no-items button {
   cursor: pointer;
 }
 
@@ -135,7 +132,7 @@ div[disabled]
 /* Activity */
 
 .activity {
-  margin-top: var(--gap-between-comonents);
+  margin-top: var(--gap-between-components);
 }
 
 #activity-cancel {
@@ -152,7 +149,7 @@ div[disabled]
   background-color: var(--color-background);
 }
 
-.activity-table{
+.activity-table {
   margin-top: 4px;
   margin-left: auto;
   margin-right: auto;
@@ -183,8 +180,10 @@ div[disabled]
 /* Schedule Modal */
 
 #schedule-modal {
-  position: absolute; /* Stay in place */
-  z-index: 1; /* Sit on top */
+  position: absolute;
+  /* Stay in place */
+  z-index: 1;
+  /* Sit on top */
   top: 50%;
   left: 50%;
   width: 200px;
@@ -201,7 +200,7 @@ div[disabled]
   font-size: 12px;
 }
 
-#schedule-modal > div > * {
+#schedule-modal>div>* {
   margin-top: 10px;
 }
 
@@ -229,17 +228,18 @@ div[disabled]
   color: var(--color-font);
 }
 
-#schedule-modal > div {
+#schedule-modal>div {
   position: relative;
   height: 100%;
 }
 
-#schedule-modal tr, #schedule-modal table {
+#schedule-modal tr,
+#schedule-modal table {
   table-layout: fixed;
   width: 100%;
 }
 
-#schedule-modal-buttons {  
+#schedule-modal-buttons {
   position: absolute;
   bottom: 0px;
   width: 100%;

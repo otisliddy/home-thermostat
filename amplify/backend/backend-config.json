@@ -1,60 +1,110 @@
 {
-  "storage": {
-    "homethermostatDeviceState": {
-      "service": "DynamoDB",
-      "providerPlugin": "awscloudformation"
-    },
-    "homethermostatScheduledActivity": {
-      "service": "DynamoDB",
-      "providerPlugin": "awscloudformation"
-    }
-  },
-  "function": {
-    "homethermostatChangeState": {
-      "build": true,
-      "providerPlugin": "awscloudformation",
-      "service": "Lambda",
-      "dependsOn": [
-        {
-          "category": "storage",
-          "resourceName": "homethermostatDeviceState",
-          "attributes": [
-            "Name",
-            "Arn",
-            "StreamArn"
-          ]
-        }
-      ]
-    },
-    "homethermostatStartScheduleStateChange": {
-      "build": true,
-      "providerPlugin": "awscloudformation",
-      "service": "Lambda",
-      "dependsOn": []
-    },
-    "homethermostatCancelRunningWorkflow": {
-      "build": true,
-      "providerPlugin": "awscloudformation",
-      "service": "Lambda",
-      "dependsOn": []
-    }
-  },
   "custom": {
     "homethermostatScheduleStateChange": {
-      "service": "customCloudformation",
-      "providerPlugin": "awscloudformation",
       "dependsOn": [
         {
-          "category": "function",
-          "resourceName": "homethermostatChangeState",
           "attributes": [
             "Name",
             "Arn",
             "Region",
             "LambdaExecutionRole"
-          ]
+          ],
+          "category": "function",
+          "resourceName": "homethermostatChangeState"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "customCloudformation"
+    }
+  },
+  "function": {
+    "homethermostatCancelRunningWorkflow": {
+      "build": true,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "homethermostatChangeState": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "homethermostatDeviceState"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "homethermostatStartScheduleStateChange": {
+      "build": true,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_homethermostatCancelRunningWorkflow_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatCancelRunningWorkflow"
         }
       ]
+    },
+    "AMPLIFY_function_homethermostatCancelRunningWorkflow_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatCancelRunningWorkflow"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatChangeState_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatChangeState"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatChangeState_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatChangeState"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatStartScheduleStateChange_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatStartScheduleStateChange"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatStartScheduleStateChange_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatStartScheduleStateChange"
+        }
+      ]
+    }
+  },
+  "storage": {
+    "homethermostatDeviceState": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
+    },
+    "homethermostatScheduledActivity": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
     }
   }
 }

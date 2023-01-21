@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import TempDisplay from './component/temp-display';
+import Header from './component/header';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
 import PreviousActivity from './component/previous-activity';
@@ -12,7 +12,6 @@ import {
   statusHelper
 } from 'home-thermostat-common';
 import {
-  hoursMinsToSeconds,
   hoursMinsToDate,
   hoursMinsToSecondsFromNow,
   relativeDateAgo
@@ -125,11 +124,11 @@ class App extends Component {
   handleScheduleConfirm(startTime, duration) {
     this.setState({ scheduleModalShow: false });
 
-    const params = this.createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), hoursMinsToSeconds(duration));
+    const params = this.createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60);
     lambda.invoke(params, function (error, data) {
       if (!error) {
         const options = {
-          duration: hoursMinsToSeconds(duration),
+          duration: duration * 60,
           executionArn: data.Payload
         };
         const status = statusHelper.createStatus(modes.ON.val, options, hoursMinsToDate(startTime));
@@ -163,7 +162,6 @@ class App extends Component {
   }
 
   handleScheduleDelete(status) {
-    console.log(status.executionArn);
     this.cancelExecution(status.executionArn, () => {
       dynamodbClient.delete(scheduleTableName, status.since)
         .then(() => {
@@ -202,8 +200,8 @@ class App extends Component {
     return (
       <div>
         <div disabled={this.state.scheduleModalShow}>
-          <TempDisplay />
-          <Status status={this.state.status} connected={this.state.connected} />
+          <Header connected={this.state.connected} />
+          <Status status={this.state.status} />
           <SelectMode currentMode={this.state.status.mode}
             handleOn={this.handleOn.bind(this)}
             handleOff={this.handleOff.bind(this)}

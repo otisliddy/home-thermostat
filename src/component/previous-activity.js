@@ -24,13 +24,14 @@ class PreviousActivity extends Component {
         const sinceDaysAgo = new Date();
         sinceDaysAgo.setTime(sinceDaysAgo.getTime() - this.state.days * 3600 * 24 * 1000);
         const sinceDaysAgoEpochSeconds = sinceDaysAgo.getTime() / 1000;
+        let totalSeconds = 0;
 
         if (this.props.statuses) {
             for (let i = 0; i < this.props.statuses.length; i++) {
                 const status = this.props.statuses[i];
                 if (status.mode !== modes.OFF.val) {
                     const nextStatus = i > 0 ? this.props.statuses[i - 1] : null;
-                    this.addStatusRow(status, nextStatus, rows);
+                    totalSeconds += this.addStatusRow(status, nextStatus, rows);
                 }
                 if (status.since < sinceDaysAgoEpochSeconds) {
                     break;
@@ -38,6 +39,7 @@ class PreviousActivity extends Component {
             }
 
         }
+
 
         return (
             <div className='activity'>
@@ -49,23 +51,30 @@ class PreviousActivity extends Component {
                 <table className='activity-table' >
                     <tbody>{rows}</tbody>
                 </table>
+                <span>Total: {Math.round(totalSeconds / 60)} minutes</span>
             </div>
         )
     }
 
     addStatusRow(status, nextStatus, rows) {
         let until = '';
+        let untilSeconds;
         if (nextStatus) {
             until = toFormattedDate(nextStatus.since);
+            untilSeconds = nextStatus.since;
         } else if (status.until) {
             until = toFormattedDate(status.until);
+            untilSeconds = status.until;
         } else {
-            until = 'now'
+            until = 'now';
+            untilSeconds = new Date().getTime() / 1000;
         }
 
         rows.push(<tr key={status.since}>
             <td>{toFormattedDate(status.since)} - {until}</td><td /><td className='activity-mode'>{status.mode}</td>
         </tr>);
+
+        return untilSeconds - status.since;
     }
 }
 

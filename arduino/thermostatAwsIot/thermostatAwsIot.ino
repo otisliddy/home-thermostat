@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include "certs.h"
 
-const char* SSID = "VODAFONE-7070";
+const char* SSID = "VODAFONE-5G_EXT_EXT";
 const char* PASSWORD = "qwertytreW1%";
 
 const char* AWS_IOT_ENDPOINT = "a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com";

@@ -1,14 +1,11 @@
-Add scheduled activity, also considering Daily Profiles for schema of tables 
 Delete rogue Amplify apps
-Create cancelRunningWorkflows Lambda
-fromOrdinal needed?
 Delete files under public dir
 Clean up IAM Users
 
 # Minor stories
-Hover delete 
+Show total time in previous activity
+Hover delete
 Cursor on buttons
-Display connected flag
 
 # Features
 Listen to MQTT update in front end

@@ -11,18 +11,11 @@ function toFormattedDate(dateSeconds) {
   }
 }
 
-function hoursMinsToSeconds(hoursMins) {
-  const hours = hoursMins.split(':')[0];
-  const mins = hoursMins.split(':')[1];
-
-  return hours * 3600 + mins * 60;
-}
-
 function hoursMinsToSecondsFromNow(hoursMins) {
   const date = hoursMinsToDate(hoursMins);
   let secondsFromNow = (date.getTime() - new Date().getTime()) / 1000;
 
-  return secondsFromNow;
+  return Math.round(secondsFromNow);
 }
 
 function hoursMinsToDate(hoursMins) {
@@ -81,7 +74,6 @@ function generateTimeDiffText(dateSeconds) {
 
 export {
   toFormattedDate,
-  hoursMinsToSeconds,
   hoursMinsToSecondsFromNow,
   hoursMinsToDate,
   relativeDateAgo,
