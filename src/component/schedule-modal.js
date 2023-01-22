@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { modes } from 'home-thermostat-common';
 
 class ScheduleModal extends Component {
     constructor(props) {
