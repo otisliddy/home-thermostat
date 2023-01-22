@@ -226,9 +226,10 @@ div[disabled] {
 #schedule-modal input {
   padding: 5px;
   color: var(--color-font);
+  width: 100%;
 }
 
-#schedule-modal>div {
+#schedule-modal > div {
   position: relative;
   height: 100%;
 }
