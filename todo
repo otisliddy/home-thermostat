@@ -1,13 +1,8 @@
-- Clean up IAM Users
-
 # Minor stories
-Show total time in previous activity
 Hover delete
 Cursor on buttons
 
 # Features
 Listen to MQTT update in front end
-Explore Amplify https://aws.amazon.com/amplify/ 
-Authenticate with login
 Setup Daily profiles using cron + eventBridge + Lambda
 Decouple BE and FE references to resources. CloudMap?
