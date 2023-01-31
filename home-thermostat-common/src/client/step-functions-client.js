@@ -12,6 +12,7 @@ class StepFunctionsClient {
                 input: JSON.stringify(stateMachineInput),
                 name: 'ScheduleHeatChange-' + makeId(10),
             };
+            console.log('Params:', params);
 
             return this.stepFunctions.startExecution(params, function (error, data) {
                 console.log('stepFunctions started', data)

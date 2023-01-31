@@ -33,12 +33,7 @@ Amplify.configure({
   }
 });
 
-/* TODO: 
-- Restrict homethermostat-frontend-view resource
-                "arn:aws:acm:region:123456789012:certificate/*",
-                "arn:aws:iot:eu-west-1:056402289766:thing/ht-main",
-                "arn:aws:dynamodb:eu-west-1:056402289766:table/homethermostat-*"
-- Don't scan Dynamo statuses
+/* TODO:
 - convert components to functional components
 - Introduce loading state
 - Write unit tests for generateAgoString

@@ -1,5 +1,6 @@
 source ~/.nvm/nvm.sh
 nvm use
+npm config set registry https://registry.npmjs.org/
 
 rm -rf node_modules package-lock.json
 npm install --production
