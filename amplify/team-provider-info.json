@@ -24,6 +24,10 @@
         "homethermostatCancelRunningWorkflow": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
           "s3Key": "amplify-builds/homethermostatCancelRunningWorkflow-74516c4747555a656578-build.zip"
+        },
+        "homethermostatSignUp": {
+          "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
+          "s3Key": "amplify-builds/homethermostatSignUp-6269516c2b4556412b75-build.zip"
         }
       },
       "storage": {

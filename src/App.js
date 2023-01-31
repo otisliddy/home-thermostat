@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './component/header';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
 import PreviousActivity from './component/previous-activity';
 import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
-import AWS from './config/aws-config';
+import AWS from 'aws-sdk';
 import {
   modes,
   DynamodbClient,
@@ -16,9 +16,31 @@ import {
   hoursMinsToSecondsFromNow,
   relativeDateAgo
 } from './util/time-helper';
+import { IoTClient, AttachPolicyCommand } from "@aws-sdk/client-iot";
 
-/*TODO: 
-- convert components to functional componentsx
+import { Amplify, Hub } from 'aws-amplify';
+import { Auth } from '@aws-amplify/auth';
+import { Authenticator } from '@aws-amplify/ui-react';
+import '@aws-amplify/ui-react/styles.css';
+const identityPoolId = 'eu-west-1:a2b980af-483f-41fb-ab4a-fcfef938015a'
+Amplify.configure({
+  Auth: {
+    identityPoolId: identityPoolId,
+    region: 'eu-west-1',
+    userPoolId: 'eu-west-1_kaR3nNFXA',
+    userPoolWebClientId: 'pj9peastf76fjjhm1cl1jumpf',
+    signUpVerificationMethod: 'link'
+  }
+});
+
+/* TODO: 
+- Restrict homethermostat-frontend-view resource
+                "arn:aws:acm:region:123456789012:certificate/*",
+                "arn:aws:iot:eu-west-1:056402289766:thing/ht-main",
+                "arn:aws:dynamodb:eu-west-1:056402289766:table/homethermostat-*"
+- Don't scan Dynamo statuses
+- convert components to functional components
+- Introduce loading state
 - Write unit tests for generateAgoString
 - Change to AWS.DynamoDB.DocumentClient()
 - Move table names to constants
@@ -28,103 +50,132 @@ const startScheduleStateChangeLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766
 const cancelRunningWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:homethermostatCancelRunningWorkflow-dev';
 const stateTableName = 'homethermostat-device-state-dev';
 const scheduleTableName = 'homethermostat-scheduled-activity-dev';
+let lambda, dynamodbClient, iotData;
 
-const lambda = new AWS.Lambda();
-const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
-const iot = new AWS.IotData({ endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com' })
+const App = () => {
+  const [status, setStatus] = useState({ mode: 'Loading...' });
+  const [scheduleModalShow, setScheduleModalShow] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [statuses, setStatuses] = useState([]);
+  const [scheduledActivity, setScheduledActivity] = useState([]);
 
-class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      status: { mode: 'Loading...' },
-      scheduleModalShow: false
-    };
-  }
+  Hub.listen('auth', async (data) => {
+    if ('signIn' === data.payload.event) {
+      setUserAndSyncStatus();
+    }
+  });
 
-  componentDidMount() {
-    this.syncStatus();
+  useEffect(() => {
+    Auth.currentCredentials().then(creds => {
+      setUserAndSyncStatus();
+    });
+  }, []);
+
+  async function setUserAndSyncStatus() {
+    try {
+      const credentials = await Auth.currentCredentials();
+      AWS.config.region = 'eu-west-1';
+
+      lambda = new AWS.Lambda({
+        credentials: Auth.essentialCredentials(credentials)
+      });
+      dynamodbClient = new DynamodbClient(new AWS.DynamoDB({
+        credentials: Auth.essentialCredentials(credentials)
+      }));
+      iotData = new AWS.IotData({
+        endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com',
+        credentials: Auth.essentialCredentials(credentials)
+      });
+
+      const iotClient = new IoTClient({
+        region: 'eu-west-1',
+        credentials: Auth.essentialCredentials(credentials)
+      });
+      const command = new AttachPolicyCommand({
+        policyName: 'HtFrontendPolicy',
+        target: credentials.identityId
+      });
+      await iotClient.send(command);
+
+      syncStatus();
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   /**
-   * Compares the reported status from the Arduino to the status from DynamoDB. If they match, the current state is set
-   * and true is returned. If the states don't match or there is an error, false is returned.
-   */
-  syncStatus() {
-    iot.getThingShadow({ thingName: 'ht-main' }, function (error, data) {
+  * Compares the reported status from the Arduino to the status from DynamoDB. If they match, the current state is set
+  * and true is returned. If the states don't match or there is an error, false is returned.
+  */
+  async function syncStatus() {
+    iotData.getThingShadow({ thingName: 'ht-main' }, function (error, data) {
       if (!error) {
         const jsonResponse = JSON.parse(data.payload);
         const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
         const connected = jsonResponse.state.reported.connected;
-        this.setState({ connected, status: { ...this.state.status, mode: reportedMode.val } });
+        setConnected(connected);
+        setStatus({ mode: reportedMode.val });
 
         dynamodbClient.getStatuses(relativeDateAgo(180)).then((statuses) => {
           if (statuses.length > 0) {
-            this.setState({ statuses: statuses });
-            if (statuses[0].mode !== this.state.status.mode) {
-              console.log('Mismatch between reported status and DynamoDB');
-            }
-            return this.setState({ status: statuses[0] });
+            setStatuses(statuses);
+            return setStatus(statuses[0]);
           }
         });
       } else {
         console.log('Error when getting thing shadow', error);
         return false;
       }
-    }.bind(this));
-
-    return dynamodbClient.getScheduledActivity().then((statuses) => {
-      this.setState({ scheduledActivity: statuses });
     });
+
+    const statuses_1 = await dynamodbClient.getScheduledActivity();
+    setScheduledActivity(statuses_1);
   }
 
-  handleProfile() {
-    this.setState({ status: { mode: modes.PROFILE.val } });
-  }
-
-  handleOn(selection) {
+  async function handleOn(selection) {
     if (typeof selection === 'string' && selection.includes('schedule')) {
-      return this.setState({ scheduleModalShow: true });
+      return setScheduleModalShow(true);
     }
 
     console.log('Turning on');
-    this.setState({ status: { mode: 'Turning On...' } });
+    cancelCurrentStatusExecution();
 
-    this.cancelCurrentStatusExecution();
-
-    const params = this.createScheduleStateChangeParams(0, selection);
+    const params = createScheduleStateChangeParams(0, selection);
     lambda.invoke(params, function (error, data) {
       if (!error) {
         const status = statusHelper.createStatus(modes.ON.val, { duration: selection, executionArn: data.Payload });
-        this.setState({ status: status });
+        setStatus(status);
+      } else if (error.statusCode === 403) {
+        alert('Forbidden, you must be an authorized user.');
       } else {
-        alert('Let Otis know that error 15 occurred');
+        alert('Let Otis know that error 15 occurred.');
       }
-    }.bind(this));
+    });
   }
 
-  handleOff() {
-    console.log('Turning off', this.state.status);
-    this.setState({ status: { mode: 'Turning Off...' } });
+  async function handleOff() {
+    console.log('Turning off', status);
 
-    this.cancelCurrentStatusExecution();
+    cancelCurrentStatusExecution();
 
     const params = { thingName: 'ht-main', payload: `{"state":{"desired":{"on":false}}}}` };
 
-    iot.updateThingShadow(params, function (err, data) {
-      if (err) console.log(err, err.stack);
-      else {
+    iotData.updateThingShadow(params, function (error, data) {
+      if (!error) {
         const status = statusHelper.createStatus(modes.OFF.val);
-        this.persistStatus(status);
+        persistStatus(status);
       }
-    }.bind(this));
+      else if (error.statusCode === 403) {
+        alert('Forbidden, you must be an authorized user.');
+      }
+    });
 
   }
 
-  handleScheduleConfirm(startTime, duration) {
-    this.setState({ scheduleModalShow: false });
+  async function handleScheduleConfirm(startTime, duration) {
+    setScheduleModalShow(false);
 
-    const params = this.createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60);
+    const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60);
     lambda.invoke(params, function (error, data) {
       if (!error) {
         const options = {
@@ -133,15 +184,18 @@ class App extends Component {
         };
         const status = statusHelper.createStatus(modes.ON.val, options, hoursMinsToDate(startTime));
         dynamodbClient.insertStatus(scheduleTableName, status).then(() => {
-          this.syncStatus();
+          syncStatus();
         });
+      } else if (error.statusCode === 403) {
+        alert('Forbidden, you must be an authorized user.');
       } else {
-        alert('Let Otis know that error 16 occurred');
+        console.log(error);
+        alert('Let Otis know that error 16 occurred.');
       }
-    }.bind(this));
+    });
   }
 
-  createScheduleStateChangeParams(startSecondsFromNow, durationSeconds) {
+  function createScheduleStateChangeParams(startSecondsFromNow, durationSeconds) {
     const payload = {
       stateMachineInput: [],
       cancelExisting: false
@@ -157,20 +211,20 @@ class App extends Component {
     return params;
   }
 
-  handleScheduleCancel() {
-    this.setState({ scheduleModalShow: false });
+  function handleScheduleCancel() {
+    setScheduleModalShow(false);
   }
 
-  handleScheduleDelete(status) {
-    this.cancelExecution(status.executionArn, () => {
+  async function handleScheduleDelete(status) {
+    cancelExecution(status.executionArn, () => {
       dynamodbClient.delete(scheduleTableName, status.since)
         .then(() => {
-          this.syncStatus();
+          syncStatus();
         });
     });
   }
 
-  cancelExecution(executionArn, callback) {
+  async function cancelExecution(executionArn, callback) {
     const params = {
       FunctionName: cancelRunningWorkflowLambdaArn,
       Payload: JSON.stringify({ executionArn: executionArn })
@@ -179,45 +233,59 @@ class App extends Component {
       if (!error) {
         console.log('Cancelled heating change');
         callback();
-      } else console.log('Error cancelling scheduled heating change', error);
+      } else if (error.statusCode === 403) {
+        alert('Forbidden, you must be an authorized user.');
+      } else {
+        console.log(error);
+        alert('Let Otis know that error 17 occurred.');
+      }
     });
   }
 
-  persistStatus(status) {
+  async function persistStatus(status) {
     dynamodbClient.insertStatus(stateTableName, status).then(() => {
-      this.setState({ status: status });
-      this.syncStatus();
+      setStatus(status);
+      syncStatus();
     });
   }
 
-  cancelCurrentStatusExecution() {
-    if (this.state.status.executionArn) {
-      this.cancelExecution(this.state.status.executionArn, () => { })
+  async function cancelCurrentStatusExecution() {
+    if (status.executionArn) {
+      cancelExecution(status.executionArn, () => { })
     }
   }
 
-  render() {
-    return (
-      <div>
-        <div disabled={this.state.scheduleModalShow}>
-          <Header connected={this.state.connected} />
-          <Status status={this.state.status} />
-          <SelectMode currentMode={this.state.status.mode}
-            handleOn={this.handleOn.bind(this)}
-            handleOff={this.handleOff.bind(this)}
-            handleProfile={this.handleProfile.bind(this)} />
-          <ScheduledActivity statuses={this.state.scheduledActivity}
-            handleDelete={this.handleScheduleDelete.bind(this)} />
-          <PreviousActivity statuses={this.state.statuses} />
+  const authComponents = {
+    ConfirmSignUp: {
+      Header() {
+        return (
+          <label>Your signup request has been sent to Otis for approval.</label>
+        );
+      }
+    }
+  }
+
+  return (
+    <div>
+      <Authenticator components={authComponents} />
+      <div id="homethermostat">
+        <div disabled={scheduleModalShow}>
+          <Header connected={connected} />
+          <Status status={status} />
+          <SelectMode currentMode={status.mode}
+            handleOn={handleOn}
+            handleOff={handleOff} />
+          <ScheduledActivity statuses={scheduledActivity}
+            handleDelete={handleScheduleDelete} />
+          <PreviousActivity statuses={statuses} />
         </div>
         <ScheduleModal
-          show={this.state.scheduleModalShow}
-          handleConfirm={this.handleScheduleConfirm.bind(this)}
-          handleCancel={this.handleScheduleCancel.bind(this)}
+          show={scheduleModalShow}
+          handleConfirm={handleScheduleConfirm}
+          handleCancel={handleScheduleCancel}
         />
-      </div>
-    );
-  }
-}
+      </div></div>
+  );
+};
 
 export default App;

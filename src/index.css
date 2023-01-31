@@ -12,7 +12,7 @@
   --gap-between-components: 30px;
 }
 
-* {
+#homethermostat > * {
   color: var(--color-font);
   font: 14px "Century Gothic", Futura, sans-serif;
 }
@@ -146,6 +146,7 @@ div[disabled] {
 }
 
 .activity-dropdown {
+  color: var(--color-font);
   background-color: var(--color-background);
 }
 
@@ -257,4 +258,10 @@ div[disabled] {
   fill: var(--color-font);
   vertical-align: bottom;
   cursor: pointer;
+}
+
+/* Auth */
+
+[data-amplify-authenticator-confirmsignup] div {
+  display: none; /* Hide the confirm signup page */
 }

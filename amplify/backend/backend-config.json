@@ -40,6 +40,12 @@
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
+    "homethermostatSignUp": {
+      "build": true,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "homethermostatStartScheduleStateChange": {
       "build": true,
       "dependsOn": [],
@@ -77,6 +83,22 @@
         {
           "category": "function",
           "resourceName": "homethermostatChangeState"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatSignUp_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatSignUp"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatSignUp_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatSignUp"
         }
       ]
     },
