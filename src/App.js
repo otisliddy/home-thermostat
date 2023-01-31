@@ -111,7 +111,7 @@ const App = () => {
         setConnected(connected);
         setStatus({ mode: reportedMode.val });
 
-        dynamodbClient.getStatuses(relativeDateAgo(180)).then((statuses) => {
+        dynamodbClient.getStatuses(relativeDateAgo(30)).then((statuses) => {
           if (statuses.length > 0) {
             setStatuses(statuses);
             return setStatus(statuses[0]);
