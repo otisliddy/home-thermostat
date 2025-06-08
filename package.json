@@ -3,14 +3,16 @@
   "version": "1.1.0",
   "private": true,
   "dependencies": {
-    "@aws-amplify/ui-react": "^4.3.4",
-    "@aws-sdk/client-iot": "^3.259.0",
-    "aws-amplify": "^5.0.11",
-    "aws-sdk": "^2.1299.0",
+    "@aws-amplify/ui-react": "^6.11.2",
+    "@aws-sdk/client-iot": "^3.826.0",
+    "@react-native-picker/picker": "^2.11.0",
+    "aws-amplify": "^6.15.0",
+    "aws-sdk": "^2.1692.0",
     "dateformat": "^5.0.3",
     "home-thermostat-common": "file:./home-thermostat-common",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-native": "^0.81.0-ni ghtly-20250607-c7cc12556",
     "react-scripts": "^5.0.1"
   },
   "scripts": {
@@ -33,5 +35,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.27.1"
   }
 }

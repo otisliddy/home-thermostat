@@ -1,3 +1,6 @@
+# Otis, if you're coming back to this project for ths first time in a while, remember:
+- `npm start` runs the app at [http://localhost:3000](http://localhost:3000)
+
 # Amplify
 amplify pull --appId d36tefta7j8ppr --envName dev
 # React

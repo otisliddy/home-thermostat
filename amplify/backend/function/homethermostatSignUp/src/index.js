@@ -14,7 +14,7 @@ exports.handler = async function (event) {
         },
         Message: {
             Body: {
-                Text: { Data: "New user " + event.request.userAttributes.email + " has requested signup. Go to AWS Console -> Cognito -> User pools -> homethermostat -> Users to confirm user." },
+                Text: { Data: "New user " + event.request.userAttributes.email + " has requested signup. To confirm user go to AWS Console -> Cognito -> User pools -> homethermostat -> Users." },
             },
 
             Subject: { Data: "Home Thermostat signup" },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import Header from './component/header';
 import Status from './component/status';
 import SelectMode from './component/select-mode';
@@ -6,30 +6,26 @@ import PreviousActivity from './component/previous-activity';
 import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
 import AWS from 'aws-sdk';
-import {
-  modes,
-  DynamodbClient,
-  statusHelper
-} from 'home-thermostat-common';
-import {
-  hoursMinsToDate,
-  hoursMinsToSecondsFromNow,
-  relativeDateAgo
-} from './util/time-helper';
-import { IoTClient, AttachPolicyCommand } from "@aws-sdk/client-iot";
+import {DynamodbClient, modes, statusHelper} from 'home-thermostat-common';
+import {hoursMinsToDate, hoursMinsToSecondsFromNow, relativeDateAgo} from './util/time-helper';
+import {AttachPolicyCommand, IoTClient} from "@aws-sdk/client-iot";
 
-import { Amplify, Hub } from 'aws-amplify';
-import { Auth } from '@aws-amplify/auth';
-import { Authenticator } from '@aws-amplify/ui-react';
+import {Amplify} from 'aws-amplify';
+import {fetchAuthSession} from 'aws-amplify/auth';
+import {Hub} from '@aws-amplify/core';
+import {Authenticator} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+
 const identityPoolId = 'eu-west-1:a2b980af-483f-41fb-ab4a-fcfef938015a'
+AWS.config.region = 'eu-west-1';
 Amplify.configure({
   Auth: {
-    identityPoolId: identityPoolId,
-    region: 'eu-west-1',
-    userPoolId: 'eu-west-1_kaR3nNFXA',
-    userPoolWebClientId: 'pj9peastf76fjjhm1cl1jumpf',
-    signUpVerificationMethod: 'link'
+    Cognito: {
+      identityPoolId: identityPoolId,
+      userPoolId: 'eu-west-1_kaR3nNFXA',
+      userPoolClientId: 'pj9peastf76fjjhm1cl1jumpf',
+      signUpVerificationMethod: 'link'
+    }
   }
 });
 
@@ -56,43 +52,49 @@ const App = () => {
 
   Hub.listen('auth', async (data) => {
     if ('signIn' === data.payload.event) {
-      setUserAndSyncStatus();
+      await setUserAndSyncStatus();
     }
   });
 
   useEffect(() => {
-    Auth.currentCredentials().then(creds => {
+    fetchAuthSession().then(creds => {
       setUserAndSyncStatus();
     });
   }, []);
 
   async function setUserAndSyncStatus() {
     try {
-      const credentials = await Auth.currentCredentials();
-      AWS.config.region = 'eu-west-1';
+      const session = await fetchAuthSession();
+      if (!session.credentials) throw new Error('No credentials available');
+      const { accessKeyId, secretAccessKey, sessionToken } = session.credentials;
+      const awsCredentials = {
+        accessKeyId,
+        secretAccessKey,
+        sessionToken
+      };
 
       lambda = new AWS.Lambda({
-        credentials: Auth.essentialCredentials(credentials)
+        credentials: awsCredentials
       });
       dynamodbClient = new DynamodbClient(new AWS.DynamoDB({
-        credentials: Auth.essentialCredentials(credentials)
+        credentials: awsCredentials
       }));
       iotData = new AWS.IotData({
         endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com',
-        credentials: Auth.essentialCredentials(credentials)
+        credentials: awsCredentials
       });
 
       const iotClient = new IoTClient({
         region: 'eu-west-1',
-        credentials: Auth.essentialCredentials(credentials)
+        credentials: awsCredentials
       });
       const command = new AttachPolicyCommand({
         policyName: 'HtFrontendPolicy',
-        target: credentials.identityId
+        target: identityPoolId
       });
       await iotClient.send(command);
 
-      syncStatus();
+      await syncStatus();
     } catch (error) {
       console.log(error);
     }
@@ -133,7 +135,7 @@ const App = () => {
     }
 
     console.log('Turning on');
-    cancelCurrentStatusExecution();
+    await cancelCurrentStatusExecution();
 
     const params = createScheduleStateChangeParams(0, selection);
     lambda.invoke(params, function (error, data) {
@@ -151,11 +153,11 @@ const App = () => {
   async function handleOff() {
     console.log('Turning off', status);
 
-    cancelCurrentStatusExecution();
+    await cancelCurrentStatusExecution();
 
     const params = { thingName: 'ht-main', payload: `{"state":{"desired":{"on":false}}}}` };
 
-    iotData.updateThingShadow(params, function (error, data) {
+    iotData.updateThingShadow(params, function (error) {
       if (!error) {
         const status = statusHelper.createStatus(modes.OFF.val);
         persistStatus(status);
@@ -198,12 +200,12 @@ const App = () => {
     payload.stateMachineInput.push({ waitSeconds: startSecondsFromNow, mode: modes.ON.val });
     payload.stateMachineInput.push({ waitSeconds: durationSeconds, mode: modes.OFF.val });
 
-    const params = {
+    console.log('qwqw', payload)
+
+    return {
       FunctionName: startScheduleStateChangeLambdaArn,
       Payload: JSON.stringify(payload)
     };
-
-    return params;
   }
 
   function handleScheduleCancel() {
@@ -224,7 +226,7 @@ const App = () => {
       FunctionName: cancelRunningWorkflowLambdaArn,
       Payload: JSON.stringify({ executionArn: executionArn })
     };
-    return lambda.invoke(params, function (error, data) {
+    return lambda.invoke(params, function (error) {
       if (!error) {
         console.log('Cancelled heating change');
         callback();
@@ -246,7 +248,8 @@ const App = () => {
 
   async function cancelCurrentStatusExecution() {
     if (status.executionArn) {
-      cancelExecution(status.executionArn, () => { })
+      await cancelExecution(status.executionArn, () => {
+      })
     }
   }
 
@@ -261,7 +264,7 @@ const App = () => {
   }
 
   return (
-    <div>
+    <div id="root">
       <Authenticator components={authComponents} />
       <div id="homethermostat">
         <div disabled={scheduleModalShow}>
@@ -279,7 +282,8 @@ const App = () => {
           handleConfirm={handleScheduleConfirm}
           handleCancel={handleScheduleCancel}
         />
-      </div></div>
+      </div>
+    </div>
   );
 };
 
