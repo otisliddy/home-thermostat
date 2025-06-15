@@ -7,12 +7,12 @@ class DynamodbClient {
         this.dynamodb = dynamodb;
     }
 
-    getStatuses(since) {
+    getStatuses(thingName, since) {
         const params = {
             TableName: stateTableName,
             KeyConditionExpression: 'device = :device and since > :since',
             ExpressionAttributeValues: {
-                ':device': { S: 'ht-main' },
+                ':device': { S: `${thingName}` },
                 ':since': { N: `${since}` }
             }
         }
@@ -34,13 +34,13 @@ class DynamodbClient {
         });
     }
 
-    getScheduledActivity() {
+    getScheduledActivity(thingName) {
         const nowSeconds = new Date().getTime() / 1000;
         const params = {
             TableName: scheduleTableName,
             KeyConditionExpression: 'device = :device and since > :since',
             ExpressionAttributeValues: {
-                ':device': { S: 'ht-main' },
+                ':device': { S: `${thingName}` },
                 ':since': { N: `${nowSeconds}` }
             }
         }
@@ -77,12 +77,12 @@ class DynamodbClient {
         });
     }
 
-    delete(tableName, since) {
+    delete(tableName, thingName, since) {
         const params = {
             TableName: tableName,
             Key: {
                 'device': {
-                    S: 'ht-main'
+                    S: `${thingName}`
                 },
                 'since': {
                     N: since.toString()
@@ -103,8 +103,6 @@ class DynamodbClient {
 }
 
 function statusToDynamoItem(status) {
-    status.device = 'ht-main';
-
     const expireAt = new Date();
     const threeYears = 60 * 60 * 24 * 365 * 3;
     expireAt.setTime((status.since + threeYears) * 1000);

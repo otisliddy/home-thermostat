@@ -1,4 +1,3 @@
-source ~/.nvm/nvm.sh
 nvm use
 npm config set registry https://registry.npmjs.org/
 

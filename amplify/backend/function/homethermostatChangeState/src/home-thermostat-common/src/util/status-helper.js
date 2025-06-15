@@ -1,10 +1,10 @@
 const statusHelper = {};
 
 /*
-* status: {mode, since, until, xecutionArn}
+* status: {mode, since, until, executionArn}
 */
-statusHelper.createStatus = (mode, options, since = new Date()) => {
-    const status = { mode: mode };
+statusHelper.createStatus = (thingName, mode, options, since = new Date()) => {
+    const status = { device: thingName, mode: mode };
     status.since = Math.round(since.getTime() / 1000);
 
     if (options && options.duration) {
