@@ -1,37 +1,31 @@
 #include <ESP8266WiFi.h>
 #include <ArduinoMqttClient.h>
 #include <ArduinoJson.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 #include "certs.h"
 
 const char* SSID = "Rambler's Lodge";
 const char* PASSWORD = "qwertytreW1%";
 
 const char* AWS_IOT_ENDPOINT = "a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com";
-const char* MAIN_TOPIC_UPDATE = "home-thermostat/main/update";
-const char* MAIN_SHADOW_TOPIC_GET = "$aws/things/ht-main/shadow/get";
+const char* MAIN_TOPIC_UPDATE = "$aws/things/ht-main/shadow/name/ht-main_shadow/update";
+const char* MAIN_SHADOW_TOPIC_GET = "$aws/things/ht-main/shadow/name/ht-main_shadow/get";
 const char* MAIN_SHADOW_TOPIC_GET_ACCEPTED = "$aws/things/ht-main/shadow/get/accepted";
 const char* MAIN_SHADOW_TOPIC_UPDATE = "$aws/things/ht-main/shadow/update";
 const char* MAIN_SHADOW_TOPIC_UPDATE_DELTA = "$aws/things/ht-main/shadow/update/delta";
-const char* IMMERSION_TOPIC_UPDATE = "home-thermostat/main/update";
+const char* IMMERSION_TOPIC_UPDATE = "$aws/things/ht-immersion/shadow/name/ht-immersion_shadow/update";
 const char* IMMERSION_SHADOW_TOPIC_GET = "$aws/things/ht-immersion/shadow/name/ht-immersion_shadow/get";
 const char* IMMERSION_SHADOW_TOPIC_GET_ACCEPTED = "$aws/things/ht-immersion/shadow/name/ht-immersion_shadow/get/accepted";
 const char* IMMERSION_SHADOW_TOPIC_UPDATE = "$aws/things/ht-immersion/shadow/name/ht-immersion_shadow/update";
 const char* IMMERSION_SHADOW_TOPIC_UPDATE_DELTA = "$aws/things/ht-immersion/shadow/name/ht-immersion_shadow/update/delta";
 
-const int MAIN_RELAY_PIN = D6;
-const int IMMERSION_RELAY_PIN = D7;
-const int TEMP_PIN = D5;
+const int MAIN_RELAY_PIN = D2;
+const int IMMERSION_RELAY_PIN = D5;
 
 boolean mainStateOn = false;
 boolean immersionStateOn = false;
 
 WiFiClientSecure wifiClient = WiFiClientSecure();
 MqttClient mqttClient(wifiClient);
-
-OneWire oneWire(TEMP_PIN);
-DallasTemperature sensors(&oneWire);
 
 void setup() {
   Serial.begin(9600);
@@ -86,12 +80,6 @@ void setCurrentTime() {
 
 void loop() {
   mqttLoop();
-  sensors.requestTemperatures();
-  float temperatureC = sensors.getTempCByIndex(0);
-
-  Serial.print("Temperature: ");
-  Serial.print(temperatureC);
-  Serial.println(" °C");
   delay(2000);
 }
 
@@ -137,10 +125,10 @@ void mqttLoop() {
 
 void connectToAwsIot() {
   String willPayload = "{\"state\":{\"reported\":{\"connected\":false}}}";
-  mqttClient.beginWill(MAIN_TOPIC_UPDATE, willPayload.length(), true, 1);
+  mqttClient.beginWill(MAIN_TOPIC_UPDATE, willPayload.length(), false, 1);
   mqttClient.print(willPayload);
   mqttClient.endWill();
-  mqttClient.beginWill(IMMERSION_TOPIC_UPDATE, willPayload.length(), true, 1);
+  mqttClient.beginWill(IMMERSION_TOPIC_UPDATE, willPayload.length(), false, 1);
   mqttClient.print(willPayload);
   mqttClient.endWill();
 
