@@ -17,7 +17,9 @@ const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 exports.handler = function (event, context) {
     console.log('Payload: ', event);
     const mode = event.heatingChanges[0].mode;
-    const params = { thingName:  event.heatingChanges[0].thingName, payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
+    const params = { thingName:  event.heatingChanges[0].thingName,
+        shadowName: event.heatingChanges[0].thingName + '_shadow',
+        payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
 
     iotData.updateThingShadow(params, function (err, data) {
         if (err) {

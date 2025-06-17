@@ -51,6 +51,36 @@ div[disabled] {
   right: 10px;
 }
 
+/* Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--gap-between-components);
+  gap: 10px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: var(--color-mode-unselected);
+  color: var(--color-font);
+  border: var(--button-border);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+}
+
+.tabs button:hover {
+  background-color: #ff6b6b;
+}
+
+.tabs button.active {
+  background-color: var(--color-mode-selected);
+  font-weight: bold;
+  transform: translateY(1px);
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
 /* Status */
 
 .status {
