@@ -5,6 +5,7 @@ import { toFormattedDate, generateTimeDiffText } from '../util/time-helper';
 class Status extends Component {
   render() {
     let mode = this.props.status.mode;
+    let device = this.props.status.device === 'ht-main' ? 'Oil' : 'Immersion';
     let since = '';
 
     Object.keys(modes).forEach((key) => {
@@ -20,7 +21,7 @@ class Status extends Component {
 
     return (
       <div className='status'>
-        <div className='mode'>Status: {mode}</div>
+        <div className='mode'>{device} is currently {mode}</div>
         <div className='since'>{since}</div>
       </div>
     );

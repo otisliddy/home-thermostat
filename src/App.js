@@ -111,7 +111,7 @@ const App = () => {
         const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
         const connected = jsonResponse.state.reported.connected;
         setConnected(connected);
-        setStatus({ mode: reportedMode.val });
+        setStatus({ mode: reportedMode.val, device: thingName });
 
         dynamodbClient.getStatuses(thingName, relativeDateAgo(30)).then((statuses) => {
           if (statuses.length > 0) {
@@ -265,7 +265,7 @@ const App = () => {
       <Authenticator components={authComponents} />
       <div id="homethermostat">
         <div className="tabs">
-          <button onClick={() => setThingName('ht-main')} className={thingName === 'ht-main' ? 'active' : ''}>Heating</button>
+          <button onClick={() => setThingName('ht-main')} className={thingName === 'ht-main' ? 'active' : ''}>Oil</button>
           <button onClick={() => setThingName('ht-immersion')} className={thingName === 'ht-immersion' ? 'active' : ''}>Immersion</button>
         </div>
         <div disabled={scheduleModalShow}>

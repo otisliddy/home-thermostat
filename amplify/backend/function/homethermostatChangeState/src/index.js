@@ -17,8 +17,9 @@ const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 exports.handler = function (event, context) {
     console.log('Payload: ', event);
     const mode = event.heatingChanges[0].mode;
-    const params = { thingName:  event.heatingChanges[0].thingName,
-        shadowName: event.heatingChanges[0].thingName + '_shadow',
+    const thingName = event.heatingChanges[0].thingName;
+    const params = { thingName:  thingName,
+        shadowName: thingName + '_shadow',
         payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
 
     iotData.updateThingShadow(params, function (err, data) {
@@ -26,15 +27,15 @@ exports.handler = function (event, context) {
             console.log(err, err.stack);
         }
         else {
-            handleSuccessfulResponse(event, mode, context);
+            handleSuccessfulResponse(event, thingName, mode, context);
         }
     });
 }
 
-function handleSuccessfulResponse(event, mode, context) {
+function handleSuccessfulResponse(event, thingName, mode, context) {
     const statusOptions = buildStatusOptions(event);
 
-    const status = statusHelper.createStatus(mode, statusOptions); //mode + until
+    const status = statusHelper.createStatus(thingName, mode, statusOptions); //mode + until
     dynamodbClient.insertStatus(stateTableName, status)
         .then(() => context.done(null, event));
 }
