@@ -1,3 +1,27 @@
+# October 2025
+- Clean up state passing for recurring scheduled activities. InitializeState duuplictes fields, surely ythis can be simplified
+{
+  "heatingChanges": [
+    {
+      "thingName": "ht-main",
+      "waitSeconds": 89934,
+      "mode": "ON",
+      "recurring": true,
+      "startTime": "22:58"
+    },
+    {
+      "thingName": "ht-main",
+      "waitSeconds": 60,
+      "mode": "OFF"
+    }
+  ],
+  "durationSeconds": 60,
+  "recurring": true,
+  "startTime": "22:58"
+}
+- Recurring scheduled states disappear from scheduled activity list after first execution
+- Don't stop recurring workflows when manually changing state
+
 # Minor stories
 Hover delete
 Cursor on buttons
