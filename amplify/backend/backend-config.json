@@ -11,6 +11,13 @@
           ],
           "category": "function",
           "resourceName": "homethermostatChangeState"
+        },
+        {
+          "attributes": [
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "homethermostatStartScheduleStateChange"
         }
       ],
       "providerPlugin": "awscloudformation",

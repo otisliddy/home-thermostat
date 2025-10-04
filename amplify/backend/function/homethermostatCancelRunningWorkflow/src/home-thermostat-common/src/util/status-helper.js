@@ -17,6 +17,10 @@ statusHelper.createStatus = (thingName, mode, options, since = new Date()) => {
         status.executionArn = options.executionArn.replace(/^"/, '').replace(/"$/, '');
     }
 
+    if (options && options.recurring !== undefined) {
+        status.recurring = options.recurring;
+    }
+
     return status;
 }
 
@@ -64,6 +68,8 @@ statusHelper.dynamoItemToStatus = (dynamoItem) => {
         if (dynamoItem.hasOwnProperty(key) && key !== 'expireAt') {
             if (dynamoItem[key].N) {
                 status[key] = parseInt(dynamoItem[key]['N']);
+            } else if (dynamoItem[key].BOOL !== undefined) {
+                status[key] = dynamoItem[key]['BOOL'];
             } else {
                 status[key] = dynamoItem[key]['S'];
             }

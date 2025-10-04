@@ -169,15 +169,16 @@ const App = () => {
 
   }
 
-  async function handleScheduleConfirm(startTime, duration) {
+  async function handleScheduleConfirm(startTime, duration, recurring) {
     setScheduleModalShow(false);
 
-    const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60);
+    const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60, recurring, startTime);
     lambda.invoke(params, function (error, data) {
       if (!error) {
         const options = {
           duration: duration * 60,
-          executionArn: data.Payload
+          executionArn: data.Payload,
+          recurring: recurring
         };
         const status = statusHelper.createStatus(thingName, modes.ON.val, options, hoursMinsToDate(startTime));
         dynamodbClient.insertStatus(scheduleTableName, status).then(() => {
@@ -192,12 +193,12 @@ const App = () => {
     });
   }
 
-  function createScheduleStateChangeParams(startSecondsFromNow, durationSeconds) {
+  function createScheduleStateChangeParams(startSecondsFromNow, durationSeconds, recurring, startTime) {
     return {
       FunctionName: startScheduleStateChangeLambdaArn,
       Payload: JSON.stringify({
         stateMachineInput: [
-          { thingName: thingName, waitSeconds: startSecondsFromNow, mode: modes.ON.val },
+          { thingName: thingName, waitSeconds: startSecondsFromNow, mode: modes.ON.val, recurring: recurring, startTime: startTime },
           { thingName: thingName, waitSeconds: durationSeconds, mode: modes.OFF.val }
         ],
         cancelExisting: false

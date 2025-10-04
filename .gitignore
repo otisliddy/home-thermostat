@@ -51,3 +51,5 @@ amplifytools.xcconfig
 # IDE
 .idea/*
 *.iml
+
+.claude/

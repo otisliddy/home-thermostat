@@ -12,6 +12,9 @@ Parameters:
     Type: String
   functionhomethermostatChangeStateLambdaExecutionRole:
     Type: String
+  functionhomethermostatStartScheduleStateChangeArn:
+    Type: String
+    Default: arn:aws:lambda:eu-west-1:056402289766:function:homethermostatStartScheduleStateChange-dev
   stepFunctionsS3Bucket:
     Type: String
     Default: arn:aws:s3:::otisliddy-homethermostat
@@ -36,6 +39,7 @@ Resources:
                   - lambda:InvokeFunction
                 Resource:
                   - Ref: functionhomethermostatChangeStateArn
+                  - Ref: functionhomethermostatStartScheduleStateChangeArn
   scheduleHeatingChange:
     Type: AWS::StepFunctions::StateMachine
     Properties:
@@ -46,11 +50,19 @@ Resources:
       StateMachineName: schedule-heating-change
       Definition:
         Comment: State machine for changing the heating mode of the Arduino.
-        StartAt: Wait
+        StartAt: InitializeState
         States:
+          InitializeState:
+            Type: Pass
+            Parameters:
+              heatingChanges.$: $
+              recurring.$: $[0].recurring
+              startTime.$: $[0].startTime
+              durationSeconds.$: $[1].waitSeconds
+            Next: Wait
           Wait:
             Type: Wait
-            SecondsPath: $[0].waitSeconds
+            SecondsPath: $.heatingChanges[0].waitSeconds
             Next: ChangeState
           ChangeState:
             Type: Task
@@ -58,17 +70,39 @@ Resources:
               Ref: functionhomethermostatChangeStateArn
             Parameters:
               executionArn.$: $$.Execution.Id
-              heatingChanges.$: $
-            ResultPath: $
-            OutputPath: $.heatingChanges[1:]
+              heatingChanges.$: $.heatingChanges
+              recurring.$: $.recurring
+              startTime.$: $.startTime
+              durationSeconds.$: $.durationSeconds
             Next: ContinueExecuting?
           ContinueExecuting?:
             Type: Choice
             Choices:
-              - Variable: $[0]
+              - Variable: $.heatingChanges[0]
                 IsPresent: true
-                Next: Wait
+                Next: PrepareNextIteration
+            Default: CheckIfRecurring
+          PrepareNextIteration:
+            Type: Pass
+            Next: Wait
+          CheckIfRecurring:
+            Type: Choice
+            Choices:
+              - Variable: $.recurring
+                BooleanEquals: true
+                Next: RescheduleRecurring
             Default: Done
+          RescheduleRecurring:
+            Type: Task
+            Resource:
+              Ref: functionhomethermostatStartScheduleStateChangeArn
+            Parameters:
+              recurring.$: $.recurring
+              startTime.$: $.startTime
+              thingName.$: $.thingName
+              waitSeconds.$: $.waitSeconds
+              durationSeconds.$: $.durationSeconds
+            End: true
           Done:
             Type: Pass
             End: true

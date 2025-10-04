@@ -5,6 +5,7 @@ class ScheduleModal extends Component {
         super(props);
         this.time = React.createRef();
         this.duration = React.createRef();
+        this.recurring = React.createRef();
     }
 
     handleConfirm() {
@@ -16,7 +17,8 @@ class ScheduleModal extends Component {
         }
         this.props.handleConfirm(
             this.time.current.value,
-            this.duration.current.value
+            this.duration.current.value,
+            this.recurring.current.checked
         );
     };
 
@@ -40,6 +42,12 @@ class ScheduleModal extends Component {
                                 <td className='schedule-modal-label'>Duration:</td>
                                 <td>
                                     <input ref={this.duration} type='number' min='1' max='120' defaultValue='30' />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className='schedule-modal-label'>Recurring:</td>
+                                <td>
+                                    <input ref={this.recurring} type='checkbox' defaultChecked={false} />
                                 </td>
                             </tr>
                         </tbody>

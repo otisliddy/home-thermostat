@@ -18,6 +18,8 @@ exports.handler = function (event, context) {
     console.log('Payload: ', event);
     const mode = event.heatingChanges[0].mode;
     const thingName = event.heatingChanges[0].thingName;
+    const recurring = event.heatingChanges[0].recurring;
+    const startTime = event.heatingChanges[0].startTime;
     const params = { thingName:  thingName,
         shadowName: thingName + '_shadow',
         payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
@@ -27,17 +29,33 @@ exports.handler = function (event, context) {
             console.log(err, err.stack);
         }
         else {
-            handleSuccessfulResponse(event, thingName, mode, context);
+            handleSuccessfulResponse(event, thingName, mode, recurring, startTime, context);
         }
     });
 }
 
-function handleSuccessfulResponse(event, thingName, mode, context) {
+function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, context) {
     const statusOptions = buildStatusOptions(event);
 
     const status = statusHelper.createStatus(thingName, mode, statusOptions); //mode + until
+
+    // Preserve recurring and startTime from the first item in heatingChanges, or from the event itself
+    const preservedRecurring = recurring || event.recurring;
+    const preservedStartTime = startTime || event.startTime;
+    const preservedDurationSeconds = event.durationSeconds || (event.heatingChanges.length > 1 ? event.heatingChanges[1].waitSeconds : undefined);
+
+    // Pass recurring and startTime info back through the state machine
+    const response = {
+        heatingChanges: event.heatingChanges.slice(1),
+        recurring: preservedRecurring,
+        startTime: preservedStartTime,
+        thingName: thingName,
+        waitSeconds: event.heatingChanges[0].waitSeconds,
+        durationSeconds: preservedDurationSeconds
+    };
+
     dynamodbClient.insertStatus(stateTableName, status)
-        .then(() => context.done(null, event));
+        .then(() => context.done(null, response));
 }
 
 function buildStatusOptions(event) {

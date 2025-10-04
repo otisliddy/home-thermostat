@@ -111,7 +111,9 @@ function statusToDynamoItem(status) {
     const item = {};
     for (const key in status) {
         if (status.hasOwnProperty(key)) {
-            if (isNaN(status[key])) {
+            if (typeof status[key] === 'boolean') {
+                item[key] = { BOOL: status[key] }
+            } else if (isNaN(status[key])) {
                 item[key] = { S: status[key] }
             } else {
                 item[key] = { N: status[key].toString() }
