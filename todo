@@ -1,5 +1,8 @@
 # October 2025
-- Clean up state passing for recurring scheduled activities. InitializeState duuplictes fields, surely ythis can be simplified
+- 'On' is broken
+- Don't stop recurring workflows when manually changing state
+- Clean up state passing for recurring scheduled activities. InitializeState duuplictes fields, surely tthis can be simplified
+- UI touch up checkbox
 {
   "heatingChanges": [
     {
@@ -19,8 +22,6 @@
   "recurring": true,
   "startTime": "22:58"
 }
-- Recurring scheduled states disappear from scheduled activity list after first execution
-- Don't stop recurring workflows when manually changing state
 
 # Minor stories
 Hover delete

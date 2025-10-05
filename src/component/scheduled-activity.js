@@ -21,13 +21,9 @@ class ScheduledActivity extends Component {
     render() {
         const rows = [];
 
-        const now = new Date().getTime() / 1000;
         if (this.props.statuses) {
             for (let i = 0; i < this.props.statuses.length; i++) {
-                const status = this.props.statuses[i];
-                if (status.since > now) {
-                    this.addStatusRow(status, rows);
-                }
+                this.addStatusRow(this.props.statuses[i], rows);
             }
         }
         if (rows.length === 0) {
