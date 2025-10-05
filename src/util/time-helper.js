@@ -32,6 +32,12 @@ function hoursMinsToDate(hoursMins) {
   return date;
 }
 
+function hoursMinsToISOString(hoursMins) {
+  // Convert HH:MM to ISO string with timezone
+  const date = hoursMinsToDate(hoursMins);
+  return date.toISOString();
+}
+
 function relativeDateAgo(daysAgo) {
   const date = new Date();
   date.setTime(date.getTime() - daysAgo * 3600 * 24 * 1000);
@@ -76,6 +82,7 @@ export {
   toFormattedDate,
   hoursMinsToSecondsFromNow,
   hoursMinsToDate,
+  hoursMinsToISOString,
   relativeDateAgo,
   generateTimeDiffText
 }

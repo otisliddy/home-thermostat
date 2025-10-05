@@ -50,41 +50,41 @@ Resources:
       StateMachineName: schedule-heating-change
       Definition:
         Comment: State machine for changing the heating mode of the Arduino.
-        StartAt: InitializeState
+        StartAt: WaitBeforeTurnOn
         States:
-          InitializeState:
-            Type: Pass
-            Parameters:
-              heatingChanges.$: $
-              recurring.$: $[0].recurring
-              startTime.$: $[0].startTime
-              durationSeconds.$: $[1].waitSeconds
-            Next: Wait
-          Wait:
+          WaitBeforeTurnOn:
             Type: Wait
-            SecondsPath: $.heatingChanges[0].waitSeconds
-            Next: ChangeState
-          ChangeState:
+            SecondsPath: $.startWaitSeconds
+            Next: TurnOn
+          TurnOn:
             Type: Task
             Resource:
               Ref: functionhomethermostatChangeStateArn
             Parameters:
               executionArn.$: $$.Execution.Id
-              heatingChanges.$: $.heatingChanges
+              thingName.$: $.thingName
+              mode: ON
               recurring.$: $.recurring
               startTime.$: $.startTime
               durationSeconds.$: $.durationSeconds
-            Next: ContinueExecuting?
-          ContinueExecuting?:
-            Type: Choice
-            Choices:
-              - Variable: $.heatingChanges[0]
-                IsPresent: true
-                Next: PrepareNextIteration
-            Default: CheckIfRecurring
-          PrepareNextIteration:
-            Type: Pass
-            Next: Wait
+            ResultPath: $.turnOnResult
+            Next: WaitBeforeTurnOff
+          WaitBeforeTurnOff:
+            Type: Wait
+            SecondsPath: $.durationSeconds
+            Next: TurnOff
+          TurnOff:
+            Type: Task
+            Resource:
+              Ref: functionhomethermostatChangeStateArn
+            Parameters:
+              executionArn.$: $$.Execution.Id
+              thingName.$: $.thingName
+              mode: OFF
+              recurring.$: $.recurring
+              startTime.$: $.startTime
+            ResultPath: $.turnOffResult
+            Next: CheckIfRecurring
           CheckIfRecurring:
             Type: Choice
             Choices:
@@ -97,10 +97,9 @@ Resources:
             Resource:
               Ref: functionhomethermostatStartScheduleStateChangeArn
             Parameters:
+              thingName.$: $.thingName
               recurring.$: $.recurring
               startTime.$: $.startTime
-              thingName.$: $.thingName
-              waitSeconds.$: $.waitSeconds
               durationSeconds.$: $.durationSeconds
             End: true
           Done:

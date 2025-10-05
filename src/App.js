@@ -7,7 +7,7 @@ import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
 import AWS from 'aws-sdk';
 import {DynamodbClient, modes, statusHelper} from 'home-thermostat-common';
-import {hoursMinsToDate, hoursMinsToSecondsFromNow, relativeDateAgo} from './util/time-helper';
+import {hoursMinsToDate, hoursMinsToSecondsFromNow, hoursMinsToISOString, relativeDateAgo} from './util/time-helper';
 
 import {Amplify} from 'aws-amplify';
 import {fetchAuthSession} from 'aws-amplify/auth';
@@ -172,7 +172,8 @@ const App = () => {
   async function handleScheduleConfirm(startTime, duration, recurring) {
     setScheduleModalShow(false);
 
-    const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60, recurring, startTime);
+    const startTimeISO = hoursMinsToISOString(startTime);
+    const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60, recurring, startTimeISO);
     lambda.invoke(params, function (error, data) {
       if (!error) {
         const options = {
@@ -194,14 +195,17 @@ const App = () => {
   }
 
   function createScheduleStateChangeParams(startSecondsFromNow, durationSeconds, recurring, startTime) {
+    // Set startTime to 0 for immediate execution
+    const effectiveStartTime = startTime || 0;
+
     return {
       FunctionName: startScheduleStateChangeLambdaArn,
       Payload: JSON.stringify({
-        stateMachineInput: [
-          { thingName: thingName, waitSeconds: startSecondsFromNow, mode: modes.ON.val, recurring: recurring, startTime: startTime },
-          { thingName: thingName, waitSeconds: durationSeconds, mode: modes.OFF.val }
-        ],
-        cancelExisting: false
+        thingName: thingName,
+        recurring: recurring || false,
+        startTime: effectiveStartTime,
+        durationSeconds: durationSeconds,
+        isInitialInvocation: true
       })
     };
   }

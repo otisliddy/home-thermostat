@@ -240,6 +240,7 @@ div[disabled] {
   text-align: right;
   padding-left: 10px;
   padding-right: 10px;
+  margin-top: 10px;
 }
 
 .schedule-modal-mode * {
@@ -269,6 +270,10 @@ div[disabled] {
 #schedule-modal table {
   table-layout: fixed;
   width: 100%;
+}
+
+#schedule-modal tr.recurring-row td {
+  padding-top: 10px;
 }
 
 #schedule-modal-buttons {

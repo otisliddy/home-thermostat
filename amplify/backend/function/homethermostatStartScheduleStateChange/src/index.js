@@ -8,80 +8,63 @@ const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
 exports.handler = function (event, context) {
   console.log('Event: ', event);
 
-  // Check if this is a recurring re-schedule call from Step Functions
-  if (event.recurring && event.startTime) {
-    console.log('Re-scheduling recurring activity for next occurrence');
+  // Extract parameters - they come directly from App.js or from RescheduleRecurring
+  const thingName = event.thingName;
+  const recurring = event.recurring || false;
+  const startTime = event.startTime;
+  const durationSeconds = event.durationSeconds;
 
-    const waitSeconds = calculateSecondsUntilTime(event.startTime);
-    const stateMachineInput = [
-      {
-        thingName: event.thingName,
-        waitSeconds: waitSeconds,
-        mode: 'ON',
-        recurring: event.recurring,
-        startTime: event.startTime
-      },
-      {
-        thingName: event.thingName,
-        waitSeconds: event.durationSeconds,
-        mode: 'OFF'
-      }
-    ];
-
-    stepFunctionsClient.startNewExecution(stateMachineInput)
-      .then((executionArn) => {
-        console.log('Successfully re-scheduled recurring activity');
-
-        // Update the scheduled activity in DynamoDB with new executionArn and time
-        const targetTime = new Date();
-        const [hours, minutes] = event.startTime.split(':').map(Number);
-        targetTime.setHours(hours, minutes, 0, 0);
-        if (targetTime <= new Date()) {
-          targetTime.setDate(targetTime.getDate() + 1);
-        }
-
-        // Delete old entry and create new one
-        // Note: We need to find the old entry first - for now just create the new one
-        // The old entry will naturally expire or can be cleaned up
-
-        context.done(null, executionArn);
-      })
-      .catch((error) => {
-        console.error('Error re-scheduling recurring activity:', error);
-        context.fail(null, error);
-      });
+  // Calculate startWaitSeconds based on startTime
+  let startWaitSeconds;
+  if (startTime === 0 || startTime === '0') {
+    // Immediate execution
+    startWaitSeconds = 0;
+  } else if (typeof startTime === 'string') {
+    // ISO 8601 timestamp string (e.g., "2025-10-05T16:31:00.000Z")
+    startWaitSeconds = calculateSecondsUntilTimestamp(startTime, recurring, event.isInitialInvocation);
   } else {
-    // Original scheduling logic
-    Promise.resolve()
-      .then(() => {
-        if (event.cancelExisting === true) {
-          return stepFunctionsClient.stopCurrentExecutions();
-        }
-      })
-      .then(() => stepFunctionsClient.startNewExecution(event.stateMachineInput))
-      .then((executionArn) => {
-        context.done(null, executionArn);
-      })
-      .catch((error) => {
-        context.fail(null, error);
-      });
+    console.error('Invalid startTime format:', startTime);
+    context.fail('Invalid startTime format');
+    return;
   }
+
+  // Build the state machine input
+  const stateMachineInput = {
+    thingName: thingName,
+    startWaitSeconds: startWaitSeconds,
+    durationSeconds: durationSeconds,
+    recurring: recurring,
+    startTime: startTime
+  };
+
+  console.log('Starting state machine with input:', stateMachineInput);
+
+  // Start the step function execution
+  stepFunctionsClient.startNewExecution(stateMachineInput)
+    .then((executionArn) => {
+      console.log('Successfully started execution:', executionArn);
+      context.done(null, executionArn);
+    })
+    .catch((error) => {
+      console.error('Error starting execution:', error);
+      context.fail(null, error);
+    });
 };
 
-function calculateSecondsUntilTime(timeString) {
-  // timeString format: "HH:MM" (e.g., "07:40")
-  // For recurring schedules, always schedule for tomorrow at the same time
-  // This ensures exactly 24-hour intervals
-  const [hours, minutes] = timeString.split(':').map(Number);
-
+function calculateSecondsUntilTimestamp(isoTimestamp, isRecurring, isInitialInvocation) {
+  const targetTime = new Date(isoTimestamp);
   const now = new Date();
-  const target = new Date();
-  target.setHours(hours, minutes, 0, 0);
 
-  // Always add one day for recurring activities
-  target.setDate(target.getDate() + 1);
+  console.log('Original target time:', targetTime.toISOString());
+  console.log('Current time:', now.toISOString());
 
-  const secondsUntil = Math.floor((target - now) / 1000);
-  console.log('Scheduling recurring activity for:', target.toISOString(), '(', secondsUntil, 'seconds from now)');
+  // For recurring activities, we need to schedule for the next occurrence (tomorrow at the same time)
+  if (isRecurring && !isInitialInvocation) {
+    targetTime.setTime(targetTime.getTime() + 24 * 60 * 60 * 1000);
+    console.log('Recurring - adjusted target time:', targetTime.toISOString());
+  }
+
+  const secondsUntil = Math.floor((targetTime - now) / 1000);
+  console.log('Scheduling for:', targetTime.toISOString(), '(', secondsUntil, 'seconds from now)');
   return secondsUntil;
 }

@@ -16,53 +16,62 @@ const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 
 exports.handler = function (event, context) {
     console.log('Payload: ', event);
-    const mode = event.heatingChanges[0].mode;
-    const thingName = event.heatingChanges[0].thingName;
-    const recurring = event.heatingChanges[0].recurring;
-    const startTime = event.heatingChanges[0].startTime;
-    const params = { thingName:  thingName,
+
+    // Extract parameters from the new simplified structure
+    const mode = event.mode; // 'ON' or 'OFF'
+    const thingName = event.thingName;
+    const recurring = event.recurring;
+    const startTime = event.startTime;
+    const durationSeconds = event.durationSeconds;
+    const executionArn = event.executionArn;
+
+    // Update the thing shadow
+    const params = {
+        thingName: thingName,
         shadowName: thingName + '_shadow',
-        payload: `{"state":{"desired":{"on":${mode === modes.ON.val}}}}` };
+        payload: `{"state":{"desired":{"on":${mode === 'ON'}}}}`
+    };
 
     iotData.updateThingShadow(params, function (err, data) {
         if (err) {
             console.log(err, err.stack);
+            context.fail(err);
         }
         else {
-            handleSuccessfulResponse(event, thingName, mode, recurring, startTime, context);
+            handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn, context);
         }
     });
 }
 
-function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, context) {
-    const statusOptions = buildStatusOptions(event);
+function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn, context) {
+    const statusOptions = buildStatusOptions(mode, durationSeconds, executionArn);
 
-    const status = statusHelper.createStatus(thingName, mode, statusOptions); //mode + until
-
-    // Preserve recurring and startTime from the first item in heatingChanges, or from the event itself
-    const preservedRecurring = recurring || event.recurring;
-    const preservedStartTime = startTime || event.startTime;
-    const preservedDurationSeconds = event.durationSeconds || (event.heatingChanges.length > 1 ? event.heatingChanges[1].waitSeconds : undefined);
-
-    // Pass recurring and startTime info back through the state machine
-    const response = {
-        heatingChanges: event.heatingChanges.slice(1),
-        recurring: preservedRecurring,
-        startTime: preservedStartTime,
-        thingName: thingName,
-        waitSeconds: event.heatingChanges[0].waitSeconds,
-        durationSeconds: preservedDurationSeconds
-    };
+    // Convert mode string to modes constant value
+    const modeValue = mode === 'ON' ? modes.ON.val : modes.OFF.val;
+    const status = statusHelper.createStatus(thingName, modeValue, statusOptions);
 
     dynamodbClient.insertStatus(stateTableName, status)
-        .then(() => context.done(null, response));
+        .then(() => {
+            // Return the original event data to pass through the state machine
+            context.done(null, event);
+        })
+        .catch((error) => {
+            console.error('Error inserting status:', error);
+            context.fail(error);
+        });
 }
 
-function buildStatusOptions(event) {
+function buildStatusOptions(mode, durationSeconds, executionArn) {
     const statusOptions = {};
-    if (event.heatingChanges.length > 1 && event.heatingChanges[1].waitSeconds) {
-        statusOptions.duration = event.heatingChanges[1].waitSeconds;
+
+    // Only add duration if we're turning ON and have a duration
+    if (mode === 'ON' && durationSeconds) {
+        statusOptions.duration = durationSeconds;
     }
-    statusOptions.executionArn = event.executionArn;
+
+    if (executionArn) {
+        statusOptions.executionArn = executionArn;
+    }
+
     return statusOptions;
 }

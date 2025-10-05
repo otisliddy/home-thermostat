@@ -1,27 +1,6 @@
 # October 2025
-- 'On' is broken
-- Don't stop recurring workflows when manually changing state
-- Clean up state passing for recurring scheduled activities. InitializeState duuplictes fields, surely tthis can be simplified
-- UI touch up checkbox
-{
-  "heatingChanges": [
-    {
-      "thingName": "ht-main",
-      "waitSeconds": 89934,
-      "mode": "ON",
-      "recurring": true,
-      "startTime": "22:58"
-    },
-    {
-      "thingName": "ht-main",
-      "waitSeconds": 60,
-      "mode": "OFF"
-    }
-  ],
-  "durationSeconds": 60,
-  "recurring": true,
-  "startTime": "22:58"
-}
+- Stop correct workflows correctly manually changing state
+- Delete step function executions properly. Should a new one be created each time?
 
 # Minor stories
 Hover delete

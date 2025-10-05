@@ -44,7 +44,7 @@ class ScheduleModal extends Component {
                                     <input ref={this.duration} type='number' min='1' max='120' defaultValue='30' />
                                 </td>
                             </tr>
-                            <tr>
+                            <tr className='recurring-row'>
                                 <td className='schedule-modal-label'>Recurring:</td>
                                 <td>
                                     <input ref={this.recurring} type='checkbox' defaultChecked={false} />
