@@ -242,8 +242,16 @@ const App = () => {
 
   async function cancelCurrentStatusExecution() {
     if (status.executionArn) {
-      await cancelExecution(status.executionArn, () => {
-      })
+      // Check if this execution belongs to a recurring scheduled activity
+      const isRecurring = scheduledActivity.some(
+        activity => activity.executionArn === status.executionArn && activity.recurring
+      );
+
+      if (!isRecurring) {
+        await cancelExecution(status.executionArn, () => {})
+      } else {
+        console.log('Not cancelling recurring execution:', status.executionArn);
+      }
     }
   }
 
