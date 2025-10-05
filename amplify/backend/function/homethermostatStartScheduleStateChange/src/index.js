@@ -1,34 +1,55 @@
-const { StepFunctionsClient } = require('./home-thermostat-common');
+/* Amplify Params - DO NOT EDIT
+	ENV
+	REGION
+	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_ARN
+	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME
+	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
+Amplify Params - DO NOT EDIT */const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('./home-thermostat-common');
 const AWS = require('aws-sdk');
 AWS.config.update({ region: process.env.REGION });
 const StepFunctions = require('aws-sdk/clients/stepfunctions');
 
 const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
+const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
+const scheduleTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME;
 
 exports.handler = function (event, context) {
   console.log('Event: ', event);
 
-  // Extract parameters - they come directly from App.js or from RescheduleRecurring
+  // Extract parameters - for initial invocation they come from App.js
+  // or for recurring invocations they come from Step Functions RescheduleRecurring state
   const thingName = event.thingName;
   const recurring = event.recurring || false;
   const startTime = event.startTime;
   const durationSeconds = event.durationSeconds;
+  const isInitialInvocation = event.isInitialInvocation;
+  const isRecurring = recurring && !isInitialInvocation;
 
-  // Calculate startWaitSeconds based on startTime
+  // Calculate startWaitSeconds and startTimeForSchedule based on startTime
   let startWaitSeconds;
+  let startTimeForSchedule; // This is the actual time when heating will turn on
+
   if (startTime === 0 || startTime === '0') {
     // Immediate execution
     startWaitSeconds = 0;
+    startTimeForSchedule = new Date(); // Now
   } else if (typeof startTime === 'string') {
-    // ISO 8601 timestamp string (e.g., "2025-10-05T16:31:00.000Z")
-    startWaitSeconds = calculateSecondsUntilTimestamp(startTime, recurring, event.isInitialInvocation);
+    // ISO timestamp - parse it
+    const parsedStartTime = new Date(startTime);
+
+    // For recurring tasks, increment by one day
+    if (isRecurring) {
+      parsedStartTime.setTime(parsedStartTime.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    startTimeForSchedule = parsedStartTime;
+    startWaitSeconds = calculateSecondsUntilTimestamp(parsedStartTime);
   } else {
     console.error('Invalid startTime format:', startTime);
     context.fail('Invalid startTime format');
     return;
   }
 
-  // Build the state machine input
   const stateMachineInput = {
     thingName: thingName,
     startWaitSeconds: startWaitSeconds,
@@ -39,30 +60,39 @@ exports.handler = function (event, context) {
 
   console.log('Starting state machine with input:', stateMachineInput);
 
-  // Start the step function execution
   stepFunctionsClient.startNewExecution(stateMachineInput)
     .then((executionArn) => {
       console.log('Successfully started execution:', executionArn);
-      context.done(null, executionArn);
+
+      const options = {
+        duration: durationSeconds,
+        executionArn: executionArn,
+        recurring: recurring
+      };
+
+      const status = statusHelper.createStatus(thingName, modes.ON.val, options, startTimeForSchedule);
+
+      console.log('Inserting scheduled activity:', status);
+
+      return dynamodbClient.insertStatus(scheduleTableName, status)
+        .then(() => {
+          console.log('Successfully inserted scheduled activity');
+          if (isRecurring) {
+            context.done(null, executionArn);
+          }
+        });
     })
     .catch((error) => {
-      console.error('Error starting execution:', error);
+      console.error('Error starting execution or inserting status:', error);
       context.fail(null, error);
     });
 };
 
-function calculateSecondsUntilTimestamp(isoTimestamp, isRecurring, isInitialInvocation) {
-  const targetTime = new Date(isoTimestamp);
+function calculateSecondsUntilTimestamp(targetTime) {
   const now = new Date();
 
-  console.log('Original target time:', targetTime.toISOString());
+  console.log('Target time:', targetTime.toISOString());
   console.log('Current time:', now.toISOString());
-
-  // For recurring activities, we need to schedule for the next occurrence (tomorrow at the same time)
-  if (isRecurring && !isInitialInvocation) {
-    targetTime.setTime(targetTime.getTime() + 24 * 60 * 60 * 1000);
-    console.log('Recurring - adjusted target time:', targetTime.toISOString());
-  }
 
   const secondsUntil = Math.floor((targetTime - now) / 1000);
   console.log('Scheduling for:', targetTime.toISOString(), '(', secondsUntil, 'seconds from now)');

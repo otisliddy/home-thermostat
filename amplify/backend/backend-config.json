@@ -55,7 +55,17 @@
     },
     "homethermostatStartScheduleStateChange": {
       "build": true,
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "homethermostatScheduledActivity"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     }

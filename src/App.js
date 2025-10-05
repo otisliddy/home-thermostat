@@ -7,7 +7,7 @@ import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
 import AWS from 'aws-sdk';
 import {DynamodbClient, modes, statusHelper} from 'home-thermostat-common';
-import {hoursMinsToDate, hoursMinsToSecondsFromNow, hoursMinsToISOString, relativeDateAgo} from './util/time-helper';
+import {hoursMinsToSecondsFromNow, hoursMinsToISOString, relativeDateAgo} from './util/time-helper';
 
 import {Amplify} from 'aws-amplify';
 import {fetchAuthSession} from 'aws-amplify/auth';
@@ -176,15 +176,7 @@ const App = () => {
     const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60, recurring, startTimeISO);
     lambda.invoke(params, function (error, data) {
       if (!error) {
-        const options = {
-          duration: duration * 60,
-          executionArn: data.Payload,
-          recurring: recurring
-        };
-        const status = statusHelper.createStatus(thingName, modes.ON.val, options, hoursMinsToDate(startTime));
-        dynamodbClient.insertStatus(scheduleTableName, status).then(() => {
-          syncStatus();
-        });
+        syncStatus();
       } else if (error.statusCode === 403) {
         alert('Forbidden, you must be an authorized user.');
       } else {
