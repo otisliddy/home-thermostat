@@ -20,30 +20,26 @@ exports.handler = function (event, context) {
   // or for recurring invocations they come from Step Functions RescheduleRecurring state
   const thingName = event.thingName;
   const recurring = event.recurring || false;
-  const startTime = event.startTime;
+  let startTime = event.startTime;
   const durationSeconds = event.durationSeconds;
   const isInitialInvocation = event.isInitialInvocation;
   const isRecurring = recurring && !isInitialInvocation;
 
-  // Calculate startWaitSeconds and startTimeForSchedule based on startTime
   let startWaitSeconds;
-  let startTimeForSchedule; // This is the actual time when heating will turn on
 
   if (startTime === 0 || startTime === '0') {
     // Immediate execution
     startWaitSeconds = 0;
-    startTimeForSchedule = new Date(); // Now
+    startTime = new Date(); // Now
   } else if (typeof startTime === 'string') {
-    // ISO timestamp - parse it
-    const parsedStartTime = new Date(startTime);
+    startTime = new Date(startTime);
 
     // For recurring tasks, increment by one day
     if (isRecurring) {
-      parsedStartTime.setTime(parsedStartTime.getTime() + 24 * 60 * 60 * 1000);
+      startTime.setTime(startTime.getTime() + 24 * 60 * 60 * 1000);
     }
 
-    startTimeForSchedule = parsedStartTime;
-    startWaitSeconds = calculateSecondsUntilTimestamp(parsedStartTime);
+    startWaitSeconds = calculateSecondsUntilTimestamp(startTime);
   } else {
     console.error('Invalid startTime format:', startTime);
     context.fail('Invalid startTime format');
@@ -70,7 +66,7 @@ exports.handler = function (event, context) {
         recurring: recurring
       };
 
-      const status = statusHelper.createStatus(thingName, modes.ON.val, options, startTimeForSchedule);
+      const status = statusHelper.createStatus(thingName, modes.ON.val, options, startTime);
 
       console.log('Inserting scheduled activity:', status);
 
