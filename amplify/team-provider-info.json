@@ -19,7 +19,7 @@
         },
         "homethermostatStartScheduleStateChange": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-3456556c4b374c393868-build.zip"
+          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-427459416b6d436d2b35-build.zip"
         },
         "homethermostatCancelRunningWorkflow": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
@@ -32,7 +32,8 @@
       },
       "storage": {
         "homethermostatDeviceState": {},
-        "homethermostatScheduledActivity": {}
+        "homethermostatScheduledActivity": {},
+        "homethermostatTemperature": {}
       },
       "custom": {
         "homethermostatScheduleStateChange": {}

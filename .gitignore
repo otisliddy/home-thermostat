@@ -53,3 +53,5 @@ amplifytools.xcconfig
 *.iml
 
 .claude/
+
+certs/

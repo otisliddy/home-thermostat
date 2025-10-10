@@ -1,0 +1,14 @@
+{
+  "resourceName": "homethermostatTemperature",
+  "tableName": "homethermostat-temperature",
+  "partitionKey": {
+    "fieldName": "device",
+    "fieldType": "string"
+  },
+  "sortKey": {
+    "fieldName": "timestamp",
+    "fieldType": "number"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

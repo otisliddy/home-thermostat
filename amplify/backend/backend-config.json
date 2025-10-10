@@ -144,6 +144,10 @@
     "homethermostatScheduledActivity": {
       "providerPlugin": "awscloudformation",
       "service": "DynamoDB"
+    },
+    "homethermostatTemperature": {
+      "providerPlugin": "awscloudformation",
+      "service": "DynamoDB"
     }
   }
 }
