@@ -28,7 +28,8 @@
         "homethermostatSignUp": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
           "s3Key": "amplify-builds/homethermostatSignUp-4f687537706b7a6c4334-build.zip"
-        }
+        },
+        "homethermostatProcessTemperatureStream": {}
       },
       "storage": {
         "homethermostatDeviceState": {},

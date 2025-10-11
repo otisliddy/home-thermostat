@@ -4,7 +4,8 @@
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_ARN
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
-Amplify Params - DO NOT EDIT */const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('./home-thermostat-common');
+Amplify Params - DO NOT EDIT */
+const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('./home-thermostat-common');
 const AWS = require('aws-sdk');
 AWS.config.update({ region: process.env.REGION });
 const StepFunctions = require('aws-sdk/clients/stepfunctions');

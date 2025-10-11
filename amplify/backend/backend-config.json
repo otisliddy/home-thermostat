@@ -47,6 +47,20 @@
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
+    "homethermostatProcessTemperatureStream": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "homethermostatTemperature"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "homethermostatSignUp": {
       "build": true,
       "dependsOn": [],
