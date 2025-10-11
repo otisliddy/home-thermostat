@@ -3,7 +3,11 @@
 	REGION
 Amplify Params - DO NOT EDIT */
 
-export const handler = async (event) => {
+const { SFNClient, SendTaskSuccessCommand } = require('@aws-sdk/client-sfn');
+
+const sfnClient = new SFNClient({ region: process.env.REGION });
+
+exports.handler = async (event) => {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
   for (const record of event.Records) {
@@ -40,7 +44,7 @@ export const handler = async (event) => {
             reason: "target_reached",
           }),
         });
-        await sf.send(command);
+        await sfnClient.send(command);
         console.log("Sent Step Function success for", thingName);
       } catch (err) {
         console.error("Error sending Step Function success:", err);

@@ -1,15 +1,20 @@
 nvm use
 npm config set registry https://registry.npmjs.org/
 
-rm -rf node_modules package-lock.json
-npm install --production
+# Copy source files (excluding node_modules) to Lambda functions
+copy_to_function() {
+  local target=$1
+  rm -rf "$target"/*
+  mkdir -p "$target"
 
-rm -rf ../amplify/backend/function/homethermostatChangeState/src/home-thermostat-common/*
-rm -rf ../amplify/backend/function/homethermostatStartScheduleStateChange/src/home-thermostat-common/*
-rm -rf ../amplify/backend/function/homethermostatCancelRunningWorkflow/src/home-thermostat-common/*
+  # Copy everything except node_modules
+  find . -maxdepth 1 ! -name node_modules ! -name . ! -name .. -exec cp -R {} "$target"/ \;
+}
 
-cp -R * ../amplify/backend/function/homethermostatChangeState/src/home-thermostat-common/
-cp -R * ../amplify/backend/function/homethermostatStartScheduleStateChange/src/home-thermostat-common/
-cp -R * ../amplify/backend/function/homethermostatCancelRunningWorkflow/src/home-thermostat-common/
+copy_to_function "../amplify/backend/function/homethermostatChangeState/src/home-thermostat-common"
+copy_to_function "../amplify/backend/function/homethermostatStartScheduleStateChange/src/home-thermostat-common"
+copy_to_function "../amplify/backend/function/homethermostatCancelRunningWorkflow/src/home-thermostat-common"
+copy_to_function "../amplify/backend/function/homethermostatProcessTemperatureStream/src/home-thermostat-common"
 
+# Install dependencies for local development/testing
 npm install

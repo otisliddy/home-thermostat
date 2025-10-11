@@ -117,6 +117,22 @@
         }
       ]
     },
+    "AMPLIFY_function_homethermostatProcessTemperatureStream_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatProcessTemperatureStream"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatProcessTemperatureStream_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatProcessTemperatureStream"
+        }
+      ]
+    },
     "AMPLIFY_function_homethermostatSignUp_deploymentBucketName": {
       "usedBy": [
         {

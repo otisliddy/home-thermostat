@@ -7,14 +7,17 @@
 Amplify Params - DO NOT EDIT */
 
 const { modes, DynamodbClient, statusHelper } = require('./home-thermostat-common');
-const AWS = require('aws-sdk');
-AWS.config.region = process.env.REGION;
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { IoTDataPlaneClient, UpdateThingShadowCommand } = require('@aws-sdk/client-iot-data-plane');
 
-const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
-const iotData = new AWS.IotData({ endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com' });
+const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
+const iotDataClient = new IoTDataPlaneClient({
+    region: process.env.REGION,
+    endpoint: 'https://a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com'
+});
 const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 
-exports.handler = function (event, context) {
+exports.handler = async function (event, context) {
     console.log('Payload: ', event);
 
     // Extract parameters from the new simplified structure
@@ -29,36 +32,33 @@ exports.handler = function (event, context) {
     const params = {
         thingName: thingName,
         shadowName: thingName + '_shadow',
-        payload: `{"state":{"desired":{"on":${mode === 'ON'}}}}`
+        payload: new TextEncoder().encode(`{"state":{"desired":{"on":${mode === 'ON'}}}}`)
     };
 
-    iotData.updateThingShadow(params, function (err, data) {
-        if (err) {
-            console.log(err, err.stack);
-            context.fail(err);
-        }
-        else {
-            handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn, context);
-        }
-    });
+    try {
+        await iotDataClient.send(new UpdateThingShadowCommand(params));
+        return await handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn);
+    } catch (err) {
+        console.log(err, err.stack);
+        throw err;
+    }
 }
 
-function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn, context) {
+async function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn) {
     const statusOptions = buildStatusOptions(mode, durationSeconds, executionArn);
 
     // Convert mode string to modes constant value
     const modeValue = mode === 'ON' ? modes.ON.val : modes.OFF.val;
     const status = statusHelper.createStatus(thingName, modeValue, statusOptions);
 
-    dynamodbClient.insertStatus(stateTableName, status)
-        .then(() => {
-            // Return the original event data to pass through the state machine
-            context.done(null, event);
-        })
-        .catch((error) => {
-            console.error('Error inserting status:', error);
-            context.fail(error);
-        });
+    try {
+        await dynamodbClient.insertStatus(stateTableName, status);
+        // Return the original event data to pass through the state machine
+        return event;
+    } catch (error) {
+        console.error('Error inserting status:', error);
+        throw error;
+    }
 }
 
 function buildStatusOptions(mode, durationSeconds, executionArn) {

@@ -1,13 +1,16 @@
-const StepFunctions = require('aws-sdk/clients/stepfunctions');
+const { SFNClient } = require('@aws-sdk/client-sfn');
 const { StepFunctionsClient } = require('./home-thermostat-common');
-const AWS = require('aws-sdk');
 
-AWS.config.region = 'eu-west-1';
-const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
+const sfnClient = new SFNClient({ region: 'eu-west-1' });
+const stepFunctionsClient = new StepFunctionsClient(sfnClient);
 
-exports.handler = function (event, context) {
+exports.handler = async function (event, context) {
   console.log('Payload: ', event);
-  stepFunctionsClient.stopRunningExecution(event.executionArn).then(() => {
-    context.done(null, 'Success!');
-  });
+  try {
+    await stepFunctionsClient.stopRunningExecution(event.executionArn);
+    return 'Success!';
+  } catch (error) {
+    console.error('Error stopping execution:', error);
+    throw error;
+  }
 };

@@ -6,15 +6,14 @@
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
 Amplify Params - DO NOT EDIT */
 const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('./home-thermostat-common');
-const AWS = require('aws-sdk');
-AWS.config.update({ region: process.env.REGION });
-const StepFunctions = require('aws-sdk/clients/stepfunctions');
+const { SFNClient } = require('@aws-sdk/client-sfn');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 
-const stepFunctionsClient = new StepFunctionsClient(new StepFunctions());
-const dynamodbClient = new DynamodbClient(new AWS.DynamoDB());
+const stepFunctionsClient = new StepFunctionsClient(new SFNClient({ region: process.env.REGION }));
+const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
 const scheduleTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME;
 
-exports.handler = function (event, context) {
+exports.handler = async function (event, context) {
   console.log('Event: ', event);
 
   // Extract parameters - for initial invocation they come from App.js
@@ -43,8 +42,7 @@ exports.handler = function (event, context) {
     startWaitSeconds = calculateSecondsUntilTimestamp(startTime);
   } else {
     console.error('Invalid startTime format:', startTime);
-    context.fail('Invalid startTime format');
-    return;
+    throw new Error('Invalid startTime format');
   }
 
   const stateMachineInput = {
@@ -57,32 +55,30 @@ exports.handler = function (event, context) {
 
   console.log('Starting state machine with input:', stateMachineInput);
 
-  stepFunctionsClient.startNewExecution(stateMachineInput)
-    .then((executionArn) => {
-      console.log('Successfully started execution:', executionArn);
+  try {
+    const executionArn = await stepFunctionsClient.startNewExecution(stateMachineInput);
+    console.log('Successfully started execution:', executionArn);
 
-      const options = {
-        duration: durationSeconds,
-        executionArn: executionArn,
-        recurring: recurring
-      };
+    const options = {
+      duration: durationSeconds,
+      executionArn: executionArn,
+      recurring: recurring
+    };
 
-      const status = statusHelper.createStatus(thingName, modes.ON.val, options, startTime);
+    const status = statusHelper.createStatus(thingName, modes.ON.val, options, startTime);
 
-      console.log('Inserting scheduled activity:', status);
+    console.log('Inserting scheduled activity:', status);
 
-      return dynamodbClient.insertStatus(scheduleTableName, status)
-        .then(() => {
-          console.log('Successfully inserted scheduled activity');
-          if (isRecurring) {
-            context.done(null, executionArn);
-          }
-        });
-    })
-    .catch((error) => {
-      console.error('Error starting execution or inserting status:', error);
-      context.fail(null, error);
-    });
+    await dynamodbClient.insertStatus(scheduleTableName, status);
+    console.log('Successfully inserted scheduled activity');
+
+    if (isRecurring) {
+      return executionArn;
+    }
+  } catch (error) {
+    console.error('Error starting execution or inserting status:', error);
+    throw error;
+  }
 };
 
 function calculateSecondsUntilTimestamp(targetTime) {

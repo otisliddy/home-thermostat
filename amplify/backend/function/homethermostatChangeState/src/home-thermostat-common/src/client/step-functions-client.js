@@ -1,3 +1,4 @@
+const { StartExecutionCommand, StopExecutionCommand } = require('@aws-sdk/client-sfn');
 const stateMachineArn = 'arn:aws:states:eu-west-1:056402289766:stateMachine:schedule-heating-change';
 
 class StepFunctionsClient {
@@ -5,39 +6,32 @@ class StepFunctionsClient {
         this.stepFunctions = stepFunctions;
     }
 
-    startNewExecution(stateMachineInput) {
-        return new Promise((resolve, reject) => {
-            const params = {
-                stateMachineArn: stateMachineArn,
-                input: JSON.stringify(stateMachineInput),
-                name: 'ScheduleHeatChange-' + makeId(10),
-            };
-            console.log('Params:', params);
+    async startNewExecution(stateMachineInput) {
+        const params = {
+            stateMachineArn: stateMachineArn,
+            input: JSON.stringify(stateMachineInput),
+            name: 'ScheduleHeatChange-' + makeId(10),
+        };
+        console.log('Params:', params);
 
-            return this.stepFunctions.startExecution(params, function (error, data) {
-                console.log('stepFunctions started', data)
-                if (error) {
-                    console.log(error, error.stack);
-                    reject(error);
-                } else {
-                    resolve(data.executionArn);
-                }
-            });
-        });
+        try {
+            const data = await this.stepFunctions.send(new StartExecutionCommand(params));
+            console.log('stepFunctions started', data);
+            return data.executionArn;
+        } catch (error) {
+            console.log(error, error.stack);
+            throw error;
+        }
     }
 
-    stopRunningExecution(executionArn) {
-        return new Promise((resolve, reject) => {
-            this.stepFunctions.stopExecution({ executionArn: executionArn }, function (error, data) {
-                if (error) {
-                    console.log('Error received trying to stop execution', error.stack);
-                    reject();
-                } else {
-                    console.log('Stopped execution. Response: ', data);
-                    resolve();
-                }
-            });
-        });
+    async stopRunningExecution(executionArn) {
+        try {
+            const data = await this.stepFunctions.send(new StopExecutionCommand({ executionArn: executionArn }));
+            console.log('Stopped execution. Response: ', data);
+        } catch (error) {
+            console.log('Error received trying to stop execution', error.stack);
+            throw error;
+        }
     }
 }
 

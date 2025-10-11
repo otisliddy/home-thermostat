@@ -1,3 +1,4 @@
+const { QueryCommand, PutItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
 const statusHelper = require('../util/status-helper');
 const stateTableName = 'homethermostat-device-state-dev';
 const scheduleTableName = 'homethermostat-scheduled-activity-dev';
@@ -7,7 +8,7 @@ class DynamodbClient {
         this.dynamodb = dynamodb;
     }
 
-    getStatuses(thingName, since) {
+    async getStatuses(thingName, since) {
         const params = {
             TableName: stateTableName,
             KeyConditionExpression: 'device = :device and since > :since',
@@ -15,74 +16,64 @@ class DynamodbClient {
                 ':device': { S: `${thingName}` },
                 ':since': { N: `${since}` }
             }
-        }
+        };
 
-        return new Promise((resolve, reject) => {
-            this.dynamodb.query(params, (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    let statuses = [];
-                    data.Items.forEach(status => {
-                        statuses.push(statusHelper.dynamoItemToStatus(status));
-                    });
-                    statuses = statuses.sort((a, b) => (parseInt(a.since) < parseInt(b.since)) ? 1 : -1);
-                    statuses = statusHelper.findStatusesConsideringDuplicates(statuses);
-                    resolve(statuses);
-                }
+        try {
+            const data = await this.dynamodb.send(new QueryCommand(params));
+            let statuses = [];
+            data.Items.forEach(status => {
+                statuses.push(statusHelper.dynamoItemToStatus(status));
             });
-        });
+            statuses = statuses.sort((a, b) => (parseInt(a.since) < parseInt(b.since)) ? 1 : -1);
+            statuses = statusHelper.findStatusesConsideringDuplicates(statuses);
+            return statuses;
+        } catch (err) {
+            throw err;
+        }
     }
 
-    getScheduledActivity(thingName) {
+    async getScheduledActivity(thingName) {
         const nowSeconds = new Date().getTime() / 1000;
         const params = {
             TableName: scheduleTableName,
             KeyConditionExpression: 'device = :device',
-            FilterExpression: 'recurring = :recurring and #until > :until',
+            FilterExpression: '#until > :until',
             ExpressionAttributeValues: {
                 ':device': {S: thingName},
-                ':until': { N: `${nowSeconds}` },
-                ':recurring': {BOOL: true}
+                ':until': { N: `${nowSeconds}` }
             },
             ExpressionAttributeNames: {
                 '#until': 'until'
             }
         };
 
-        return new Promise((resolve, reject) => {
-            this.dynamodb.query(params, (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    let statuses = [];
-                    data.Items.forEach(status => {
-                        statuses.push(statusHelper.dynamoItemToStatus(status));
-                    });
-                    resolve(statuses);
-                }
+        try {
+            const data = await this.dynamodb.send(new QueryCommand(params));
+            let statuses = [];
+            data.Items.forEach(status => {
+                statuses.push(statusHelper.dynamoItemToStatus(status));
             });
-        });
+            return statuses;
+        } catch (err) {
+            throw err;
+        }
     }
 
-    insertStatus(tableName, status) {
+    async insertStatus(tableName, status) {
         const params = {
             TableName: tableName,
             Item: statusToDynamoItem(status),
         };
-        return new Promise((resolve, reject) => {
-            this.dynamodb.putItem(params, (err, data) => {
-                if (err) {
-                    console.error("Unable to add item, error:", JSON.stringify(err, null, 2));
-                    reject(err);
-                } else {
-                    resolve('Inserted status successfully');
-                }
-            });
-        });
+        try {
+            await this.dynamodb.send(new PutItemCommand(params));
+            return 'Inserted status successfully';
+        } catch (err) {
+            console.error("Unable to add item, error:", JSON.stringify(err, null, 2));
+            throw err;
+        }
     }
 
-    delete(tableName, thingName, since) {
+    async delete(tableName, thingName, since) {
         const params = {
             TableName: tableName,
             Key: {
@@ -94,16 +85,13 @@ class DynamodbClient {
                 }
             }
         };
-        return new Promise((resolve, reject) => {
-            this.dynamodb.deleteItem(params, (err, data) => {
-                if (err) {
-                    console.error("Unable to delete item, error", JSON.stringify(err, null, 2));
-                    reject(err);
-                } else {
-                    resolve('Deleted item successfully');
-                }
-            });
-        });
+        try {
+            await this.dynamodb.send(new DeleteItemCommand(params));
+            return 'Deleted item successfully';
+        } catch (err) {
+            console.error("Unable to delete item, error", JSON.stringify(err, null, 2));
+            throw err;
+        }
     }
 }
 

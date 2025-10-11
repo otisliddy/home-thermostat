@@ -5,7 +5,9 @@ import SelectMode from './component/select-mode';
 import PreviousActivity from './component/previous-activity';
 import ScheduledActivity from './component/scheduled-activity';
 import ScheduleModal from './component/schedule-modal';
-import AWS from 'aws-sdk';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { IoTDataPlaneClient, GetThingShadowCommand, UpdateThingShadowCommand } from '@aws-sdk/client-iot-data-plane';
 import {DynamodbClient, modes, statusHelper} from 'home-thermostat-common';
 import {hoursMinsToSecondsFromNow, hoursMinsToISOString, relativeDateAgo} from './util/time-helper';
 
@@ -16,7 +18,6 @@ import {Authenticator} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
 const identityPoolId = 'eu-west-1:a2b980af-483f-41fb-ab4a-fcfef938015a'
-AWS.config.region = 'eu-west-1';
 Amplify.configure({
   Auth: {
     Cognito: {
@@ -83,14 +84,17 @@ const App = () => {
         sessionToken
       };
 
-      lambda = new AWS.Lambda({
+      lambda = new LambdaClient({
+        region: 'eu-west-1',
         credentials: awsCredentials
       });
-      dynamodbClient = new DynamodbClient(new AWS.DynamoDB({
+      dynamodbClient = new DynamodbClient(new DynamoDBClient({
+        region: 'eu-west-1',
         credentials: awsCredentials
       }));
-      iotData = new AWS.IotData({
-        endpoint: 'a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com',
+      iotData = new IoTDataPlaneClient({
+        region: 'eu-west-1',
+        endpoint: 'https://a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com',
         credentials: awsCredentials
       });
 
@@ -105,28 +109,28 @@ const App = () => {
   * and true is returned. If the states don't match or there is an error, false is returned.
   */
   async function syncStatus() {
-    iotData.getThingShadow({ thingName: thingName, shadowName: thingName + '_shadow' }, function (error, data) {
-      if (!error) {
-        const jsonResponse = JSON.parse(data.payload);
-        const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
-        const connected = jsonResponse.state.reported.connected;
-        setConnected(connected);
-        setStatus({ mode: reportedMode.val, device: thingName });
+    try {
+      const command = new GetThingShadowCommand({ thingName: thingName, shadowName: thingName + '_shadow' });
+      const data = await iotData.send(command);
+      const payloadString = new TextDecoder().decode(data.payload);
+      const jsonResponse = JSON.parse(payloadString);
+      const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
+      const connected = jsonResponse.state.reported.connected;
+      setConnected(connected);
+      setStatus({ mode: reportedMode.val, device: thingName });
 
-        dynamodbClient.getStatuses(thingName, relativeDateAgo(30)).then((statuses) => {
-          if (statuses.length > 0) {
-            setStatuses(statuses);
-            return setStatus(statuses[0]);
-          }
-        });
-      } else {
-        console.log('Error when getting thing shadow', error);
-        return false;
+      const statuses = await dynamodbClient.getStatuses(thingName, relativeDateAgo(30));
+      if (statuses.length > 0) {
+        setStatuses(statuses);
+        setStatus(statuses[0]);
       }
-    });
+    } catch (error) {
+      console.log('Error when getting thing shadow', error);
+      return false;
+    }
 
-    const statuses_1 = await dynamodbClient.getScheduledActivity(thingName);
-    setScheduledActivity(statuses_1);
+    const scheduledActivity = await dynamodbClient.getScheduledActivity(thingName);
+    setScheduledActivity(scheduledActivity);
   }
 
   async function handleOn(selection) {
@@ -138,16 +142,29 @@ const App = () => {
     await cancelCurrentStatusExecution();
 
     const params = createScheduleStateChangeParams(0, selection);
-    lambda.invoke(params, function (error, data) {
-      if (!error) {
-        const status = statusHelper.createStatus(thingName, modes.ON.val, { duration: selection, executionArn: data.Payload });
-        setStatus(status);
-      } else if (error.statusCode === 403) {
+    try {
+      const command = new InvokeCommand(params);
+      const data = await lambda.send(command);
+      // Lambda returns the execution ARN as a JSON string (or undefined for non-recurring)
+      let executionArn;
+      if (data.Payload) {
+        const responseText = new TextDecoder().decode(data.Payload);
+        console.log('Lambda response text:', responseText);
+        if (responseText && responseText !== 'null' && responseText !== 'undefined') {
+          executionArn = JSON.parse(responseText);
+          console.log('Parsed executionArn:', executionArn, 'type:', typeof executionArn);
+        }
+      }
+      const status = statusHelper.createStatus(thingName, modes.ON.val, { duration: selection, executionArn: executionArn });
+      setStatus(status);
+    } catch (error) {
+      if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
         alert('Forbidden, you must be an authorized user.');
       } else {
+        console.error('Error invoking lambda:', error);
         alert('Let Otis know that error 15 occurred.');
       }
-    });
+    }
   }
 
   async function handleOff() {
@@ -155,18 +172,24 @@ const App = () => {
 
     await cancelCurrentStatusExecution();
 
-    const params = { thingName: thingName, shadowName: thingName + '_shadow', payload: `{"state":{"desired":{"on":false}}}}` };
+    const params = {
+      thingName: thingName,
+      shadowName: thingName + '_shadow',
+      payload: new TextEncoder().encode(`{"state":{"desired":{"on":false}}}`)
+    };
 
-    iotData.updateThingShadow(params, function (error) {
-      if (!error) {
-        const status = statusHelper.createStatus(thingName, modes.OFF.val);
-        persistStatus(status);
-      }
-      else if (error.statusCode === 403) {
+    try {
+      const command = new UpdateThingShadowCommand(params);
+      await iotData.send(command);
+      const status = statusHelper.createStatus(thingName, modes.OFF.val);
+      persistStatus(status);
+    } catch (error) {
+      if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
         alert('Forbidden, you must be an authorized user.');
+      } else {
+        console.error('Error updating thing shadow:', error);
       }
-    });
-
+    }
   }
 
   async function handleScheduleConfirm(startTime, duration, recurring) {
@@ -174,16 +197,18 @@ const App = () => {
 
     const startTimeISO = hoursMinsToISOString(startTime);
     const params = createScheduleStateChangeParams(hoursMinsToSecondsFromNow(startTime), duration * 60, recurring, startTimeISO);
-    lambda.invoke(params, function (error, data) {
-      if (!error) {
-        syncStatus();
-      } else if (error.statusCode === 403) {
+    try {
+      const command = new InvokeCommand(params);
+      await lambda.send(command);
+      syncStatus();
+    } catch (error) {
+      if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
         alert('Forbidden, you must be an authorized user.');
       } else {
         console.log(error);
         alert('Let Otis know that error 16 occurred.');
       }
-    });
+    }
   }
 
   function createScheduleStateChangeParams(startSecondsFromNow, durationSeconds, recurring, startTime) {
@@ -220,17 +245,19 @@ const App = () => {
       FunctionName: cancelRunningWorkflowLambdaArn,
       Payload: JSON.stringify({ executionArn: executionArn })
     };
-    return lambda.invoke(params, function (error) {
-      if (!error) {
-        console.log('Cancelled heating change');
-        callback();
-      } else if (error.statusCode === 403) {
+    try {
+      const command = new InvokeCommand(params);
+      await lambda.send(command);
+      console.log('Cancelled heating change');
+      callback();
+    } catch (error) {
+      if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
         alert('Forbidden, you must be an authorized user.');
       } else {
         console.log(error);
         alert('Let Otis know that error 17 occurred.');
       }
-    });
+    }
   }
 
   async function persistStatus(status) {

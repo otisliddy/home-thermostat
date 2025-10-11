@@ -2,9 +2,9 @@
     ENV
     REGION
 Amplify Params - DO NOT EDIT */
-const AWS = require('aws-sdk');
-AWS.config.region = process.env.REGION
-var ses = new AWS.SES();
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+
+const sesClient = new SESClient({ region: process.env.REGION });
 
 exports.handler = async function (event) {
     console.log('event', event);
@@ -16,14 +16,16 @@ exports.handler = async function (event) {
             Body: {
                 Text: { Data: "New user " + event.request.userAttributes.email + " has requested signup. To confirm user go to AWS Console -> Cognito -> User pools -> homethermostat -> Users." },
             },
-
             Subject: { Data: "Home Thermostat signup" },
         },
         Source: 'otisliddy@gmail.com',
     };
 
-    return ses.sendEmail(params).promise().then(() => {
+    try {
+        await sesClient.send(new SendEmailCommand(params));
         return event;
-    });
-
+    } catch (error) {
+        console.error('Error sending email:', error);
+        throw error;
+    }
 };
