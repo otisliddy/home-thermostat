@@ -1,0 +1,141 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: State machine for heating control based on temperature targets
+Parameters:
+  env:
+    Type: String
+  functionhomethermostatChangeStateName:
+    Type: String
+    Description: Input parameter describing Name attribute for function/homethermostatChangeState
+      resource
+  functionhomethermostatChangeStateArn:
+    Type: String
+    Description: Input parameter describing Arn attribute for function/homethermostatChangeState
+      resource
+  functionhomethermostatChangeStateRegion:
+    Type: String
+    Description: Input parameter describing Region attribute for function/homethermostatChangeState
+      resource
+  functionhomethermostatChangeStateLambdaExecutionRole:
+    Type: String
+    Description: Input parameter describing LambdaExecutionRole attribute for function/homethermostatChangeState
+      resource
+  functionhomethermostatChangeStateLambdaExecutionRoleArn:
+    Type: String
+    Description: Input parameter describing LambdaExecutionRoleArn attribute for function/homethermostatChangeState
+      resource
+  storagehomethermostatScheduledActivityName:
+    Type: String
+    Default: homethermostat-scheduled-activity-dev
+  storagehomethermostatScheduledActivityArn:
+    Type: String
+    Default: arn:aws:dynamodb:eu-west-1:056402289766:table/homethermostat-scheduled-activity-dev
+Resources:
+  temperatureHeatingChangeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: temperatureHeatingChangeInvokeLambda
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - Ref: functionhomethermostatChangeStateArn
+        - PolicyName: temperatureHeatingChangeDynamoDB
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - Ref: storagehomethermostatScheduledActivityArn
+  temperatureHeatingChange:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - temperatureHeatingChangeRole
+          - Arn
+      StateMachineName: temperature-heating-change
+      Definition:
+        Comment: State machine for controlling heating until target temperature is
+          reached
+        StartAt: TurnOn
+        States:
+          TurnOn:
+            Type: Task
+            Resource:
+              Ref: functionhomethermostatChangeStateArn
+            Parameters:
+              executionArn.$: "$$.Execution.Id"
+              thingName.$: "$.thingName"
+              mode: 'ON'
+            ResultPath: "$"
+            Next: WaitForTargetTemperature
+          WaitForTargetTemperature:
+            Type: Task
+            Resource: arn:aws:states:::dynamodb:updateItem.waitForTaskToken
+            Parameters:
+              TableName:
+                Ref: storagehomethermostatScheduledActivityName
+              Key:
+                device:
+                  S.$: "$.thingName"
+                since:
+                  N.$: States.Format('{}', $.since)
+              UpdateExpression: SET taskToken = :taskToken
+              ExpressionAttributeValues:
+                ":taskToken":
+                  S.$: "$$.Task.Token"
+            TimeoutSeconds: 3600
+            ResultPath: "$.waitResult"
+            Next: TurnOff
+          TurnOff:
+            Type: Task
+            Resource:
+              Ref: functionhomethermostatChangeStateArn
+            Parameters:
+              executionArn.$: "$$.Execution.Id"
+              thingName.$: "$.thingName"
+              mode: 'OFF'
+            ResultPath: "$.turnOffResult"
+            Next: UpdateScheduledActivityUntil
+          UpdateScheduledActivityUntil:
+            Type: Task
+            Resource: arn:aws:states:::dynamodb:updateItem
+            Parameters:
+              TableName:
+                Ref: storagehomethermostatScheduledActivityName
+              Key:
+                device:
+                  S.$: "$.thingName"
+                since:
+                  N.$: States.Format('{}', $.since)
+              UpdateExpression: 'SET #until = :until'
+              ExpressionAttributeNames:
+                "#until": until
+              ExpressionAttributeValues:
+                ":until":
+                  N.$: States.Format('{}', $$.State.EnteredTime)
+            End: true
+Outputs:
+  StateMachineArn:
+    Value:
+      Ref: temperatureHeatingChange
+    Description: ARN of the temperature heating change state machine
+  StateMachineName:
+    Value:
+      Fn::GetAtt:
+        - temperatureHeatingChange
+        - Name
+    Description: Name of the temperature heating change state machine

@@ -23,6 +23,7 @@ exports.handler = async function (event, context) {
     // Extract parameters from the new simplified structure
     const mode = event.mode; // 'ON' or 'OFF'
     const thingName = event.thingName;
+    // todo these aren't used. Can they be omitted from this state machine task params without messing up rest of state machine?
     const recurring = event.recurring;
     const startTime = event.startTime;
     const durationSeconds = event.durationSeconds;
@@ -53,8 +54,11 @@ async function handleSuccessfulResponse(event, thingName, mode, recurring, start
 
     try {
         await dynamodbClient.insertStatus(stateTableName, status);
-        // Return the original event data to pass through the state machine
-        return event;
+        // Return the original event data plus the 'since' timestamp
+        return {
+            ...event,
+            since: status.since
+        };
     } catch (error) {
         console.error('Error inserting status:', error);
         throw error;
