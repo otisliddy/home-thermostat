@@ -22,6 +22,11 @@
       ],
       "providerPlugin": "awscloudformation",
       "service": "customCloudformation"
+    },
+    "homethermostatTemperatureStateChange": {
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "customCloudformation"
     }
   },
   "function": {
@@ -52,10 +57,12 @@
       "dependsOn": [
         {
           "attributes": [
+            "Name",
+            "Arn",
             "StreamArn"
           ],
           "category": "storage",
-          "resourceName": "homethermostatTemperature"
+          "resourceName": "homethermostatScheduledActivity"
         }
       ],
       "providerPlugin": "awscloudformation",

@@ -42,8 +42,9 @@ div[disabled] {
   position: relative;
 }
 
-#temp-outside {
+#temp-outside, #temp-dhw {
   font-size: 12px;
+  padding-top: 10px;
 }
 
 #connected-status {

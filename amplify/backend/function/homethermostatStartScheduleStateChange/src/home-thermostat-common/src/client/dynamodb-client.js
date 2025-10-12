@@ -37,11 +37,10 @@ class DynamodbClient {
         const params = {
             TableName: scheduleTableName,
             KeyConditionExpression: 'device = :device',
-            FilterExpression: 'recurring = :recurring and #until > :until',
+            FilterExpression: '#until > :until',
             ExpressionAttributeValues: {
                 ':device': {S: thingName},
-                ':until': { N: `${nowSeconds}` },
-                ':recurring': {BOOL: true}
+                ':until': { N: `${nowSeconds}` }
             },
             ExpressionAttributeNames: {
                 '#until': 'until'
@@ -91,6 +90,34 @@ class DynamodbClient {
             return 'Deleted item successfully';
         } catch (err) {
             console.error("Unable to delete item, error", JSON.stringify(err, null, 2));
+            throw err;
+        }
+    }
+
+    async getLatestTemperature(tableName, device) {
+        const params = {
+            TableName: tableName,
+            KeyConditionExpression: 'device = :device',
+            ExpressionAttributeValues: {
+                ':device': { S: device }
+            },
+            ScanIndexForward: false,
+            Limit: 1
+        };
+
+        try {
+            const data = await this.dynamodb.send(new QueryCommand(params));
+            if (data.Items && data.Items.length > 0) {
+                const item = data.Items[0];
+                return {
+                    device: item.device?.S,
+                    timestamp: parseInt(item.timestamp?.N),
+                    temperature: parseFloat(item.temperature?.N)
+                };
+            }
+            return null;
+        } catch (err) {
+            console.error("Unable to get latest temperature, error:", JSON.stringify(err, null, 2));
             throw err;
         }
     }

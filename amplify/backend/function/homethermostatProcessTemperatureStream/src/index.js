@@ -1,6 +1,9 @@
 /* Amplify Params - DO NOT EDIT
 	ENV
 	REGION
+	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_ARN
+	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME
+	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
 Amplify Params - DO NOT EDIT */
 
 const { SFNClient, SendTaskSuccessCommand } = require('@aws-sdk/client-sfn');
@@ -16,7 +19,7 @@ exports.handler = async (event) => {
     const newImage = record.dynamodb?.NewImage;
     if (!newImage) continue;
 
-    const thingName = newImage.thingName?.S;
+    const thingName = newImage.device?.S;
     const temperature = parseFloat(newImage.temperature?.N);
     const timestamp = parseInt(newImage.timestamp?.N, 10);
 

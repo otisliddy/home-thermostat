@@ -1,0 +1,30 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "env": {
+      "Type": "String"
+    },
+    "functionhomethermostatChangeStateName": {
+      "Type": "String",
+      "Description": "Input parameter describing Name attribute for function/homethermostatChangeState resource"
+    },
+    "functionhomethermostatChangeStateArn": {
+      "Type": "String",
+      "Description": "Input parameter describing Arn attribute for function/homethermostatChangeState resource"
+    },
+    "functionhomethermostatChangeStateRegion": {
+      "Type": "String",
+      "Description": "Input parameter describing Region attribute for function/homethermostatChangeState resource"
+    },
+    "functionhomethermostatChangeStateLambdaExecutionRole": {
+      "Type": "String",
+      "Description": "Input parameter describing LambdaExecutionRole attribute for function/homethermostatChangeState resource"
+    },
+    "functionhomethermostatChangeStateLambdaExecutionRoleArn": {
+      "Type": "String",
+      "Description": "Input parameter describing LambdaExecutionRoleArn attribute for function/homethermostatChangeState resource"
+    }
+  },
+  "Resources": {},
+  "Outputs": {}
+}

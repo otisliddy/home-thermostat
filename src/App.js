@@ -41,6 +41,7 @@ const startScheduleStateChangeLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766
 const cancelRunningWorkflowLambdaArn = 'arn:aws:lambda:eu-west-1:056402289766:function:homethermostatCancelRunningWorkflow-dev';
 const stateTableName = 'homethermostat-device-state-dev';
 const scheduleTableName = 'homethermostat-scheduled-activity-dev';
+const temperatureTableName = 'homethermostat-temperature-dev';
 let lambda, dynamodbClient, iotData;
 
 const App = () => {
@@ -50,6 +51,7 @@ const App = () => {
   const [statuses, setStatuses] = useState([]);
   const [scheduledActivity, setScheduledActivity] = useState([]);
   const [thingName, setThingName] = useState('ht-main');
+  const [dhwTemperature, setDhwTemperature] = useState(null);
 
   Hub.listen('auth', async (data) => {
     if ('signIn' === data.payload.event) {
@@ -131,6 +133,29 @@ const App = () => {
 
     const scheduledActivity = await dynamodbClient.getScheduledActivity(thingName);
     setScheduledActivity(scheduledActivity);
+
+    await fetchDhwTemperature();
+  }
+
+  async function fetchDhwTemperature() {
+    try {
+      const tempData = await dynamodbClient.getLatestTemperature(temperatureTableName, 'ht-dhw-temp');
+      if (tempData) {
+        const now = Date.now();
+        const tempAge = now - tempData.timestamp;
+        const tenMinutes = 10 * 60 * 1000;
+
+        setDhwTemperature({
+          temperature: tempData.temperature,
+          timestamp: tempData.timestamp,
+          isStale: tempAge > tenMinutes
+        });
+      }
+    } catch (error) {
+      console.log('Error fetching DHW temperature:', error);
+      // Don't show DHW temperature if there's an error
+      setDhwTemperature(null);
+    }
   }
 
   async function handleOn(selection) {
@@ -301,7 +326,7 @@ const App = () => {
           <button onClick={() => setThingName('ht-immersion')} className={thingName === 'ht-immersion' ? 'active' : ''}>Immersion</button>
         </div>
         <div disabled={scheduleModalShow}>
-          <Header connected={connected}/>
+          <Header connected={connected} dhwTemperature={dhwTemperature}/>
           <Status status={status}/>
           <SelectMode currentMode={status.mode} handleOn={handleOn} handleOff={handleOff}/>
           <ScheduledActivity statuses={scheduledActivity} handleDelete={handleScheduleDelete}/>

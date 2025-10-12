@@ -1,4 +1,11 @@
 {
-  "permissions": {},
+  "permissions": {
+    "storage": {
+      "homethermostatScheduledActivity": [
+        "read",
+        "update"
+      ]
+    }
+  },
   "lambdaLayers": []
 }

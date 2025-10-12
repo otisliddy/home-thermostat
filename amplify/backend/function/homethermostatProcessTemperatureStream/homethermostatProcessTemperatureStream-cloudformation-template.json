@@ -19,6 +19,18 @@
     "storagehomethermostatTemperatureStreamArn": {
       "Type": "String",
       "Default": "storagehomethermostatTemperatureStreamArn"
+    },
+    "storagehomethermostatScheduledActivityName": {
+      "Type": "String",
+      "Default": "storagehomethermostatScheduledActivityName"
+    },
+    "storagehomethermostatScheduledActivityArn": {
+      "Type": "String",
+      "Default": "storagehomethermostatScheduledActivityArn"
+    },
+    "storagehomethermostatScheduledActivityStreamArn": {
+      "Type": "String",
+      "Default": "storagehomethermostatScheduledActivityStreamArn"
     }
   },
   "Conditions": {
@@ -73,6 +85,15 @@
             },
             "REGION": {
               "Ref": "AWS::Region"
+            },
+            "STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME": {
+              "Ref": "storagehomethermostatScheduledActivityName"
+            },
+            "STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_ARN": {
+              "Ref": "storagehomethermostatScheduledActivityArn"
+            },
+            "STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN": {
+              "Ref": "storagehomethermostatScheduledActivityStreamArn"
             }
           }
         },
@@ -219,6 +240,56 @@
           ]
         },
         "StartingPosition": "LATEST"
+      }
+    },
+    "AmplifyResourcesPolicy": {
+      "DependsOn": [
+        "LambdaExecutionRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "amplify-lambda-execution-policy",
+        "Roles": [
+          {
+            "Ref": "LambdaExecutionRole"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:Get*",
+                "dynamodb:BatchGetItem",
+                "dynamodb:List*",
+                "dynamodb:Describe*",
+                "dynamodb:Scan",
+                "dynamodb:Query",
+                "dynamodb:PartiQLSelect",
+                "dynamodb:Update*",
+                "dynamodb:RestoreTable*",
+                "dynamodb:PartiQLUpdate"
+              ],
+              "Resource": [
+                {
+                  "Ref": "storagehomethermostatScheduledActivityArn"
+                },
+                {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      {
+                        "Ref": "storagehomethermostatScheduledActivityArn"
+                      },
+                      "index/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     }
   },
