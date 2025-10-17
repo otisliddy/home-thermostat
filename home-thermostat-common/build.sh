@@ -1,20 +1,51 @@
-nvm use
-npm config set registry https://registry.npmjs.org/
+#!/bin/bash
 
-# Copy source files (excluding node_modules) to Lambda functions
-copy_to_function() {
-  local target=$1
-  rm -rf "$target"/*
-  mkdir -p "$target"
+# Check if -d flag is passed for dependency installation
+INSTALL_DEPS=false
+if [ "$1" = "-d" ]; then
+  INSTALL_DEPS=true
+fi
 
-  # Copy everything except node_modules
-  find . -maxdepth 1 ! -name node_modules ! -name . ! -name .. -exec cp -R {} "$target"/ \;
-}
+# List of Lambda functions to update
+FUNCTIONS=(
+  "homethermostatChangeState"
+  "homethermostatStartScheduleStateChange"
+  "homethermostatCancelRunningWorkflow"
+  "homethermostatStoreTaskToken"
+  "homethermostatProcessTemperatureStream"
+)
 
-copy_to_function "../amplify/backend/function/homethermostatChangeState/src/home-thermostat-common"
-copy_to_function "../amplify/backend/function/homethermostatStartScheduleStateChange/src/home-thermostat-common"
-copy_to_function "../amplify/backend/function/homethermostatCancelRunningWorkflow/src/home-thermostat-common"
-copy_to_function "../amplify/backend/function/homethermostatProcessTemperatureStream/src/home-thermostat-common"
+if [ "$INSTALL_DEPS" = true ]; then
+  echo "Installing dependencies..."
+  nvm use 22
+  npm config set registry https://registry.npmjs.org/
 
-# Install dependencies for local development/testing
-npm install
+  rm -rf node_modules package-lock.json
+  npm install --production
+fi
+
+# Copy src directory to all Lambda functions
+echo "Copying src directory to Lambda functions..."
+for FUNC in "${FUNCTIONS[@]}"; do
+  DEST="../amplify/backend/function/$FUNC/src/home-thermostat-common"
+
+  if [ "$INSTALL_DEPS" = true ]; then
+    # Full clean and copy everything
+    echo "  Cleaning and copying everything to $FUNC..."
+    rm -rf "$DEST"/*
+    cp -R * "$DEST"/
+  else
+    # Only copy src directory
+    echo "  Copying src to $FUNC..."
+    rm -rf "$DEST/src"
+    mkdir -p "$DEST"
+    cp -R src "$DEST"/
+  fi
+done
+
+if [ "$INSTALL_DEPS" = true ]; then
+  echo "Installing dev dependencies..."
+  npm install
+fi
+
+echo "Build complete!"

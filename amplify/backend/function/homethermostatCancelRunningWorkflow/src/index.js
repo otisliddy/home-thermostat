@@ -1,3 +1,4 @@
+// TODO remove this Lambda, can now invoke StepFunctions from UI
 const { SFNClient } = require('@aws-sdk/client-sfn');
 const { StepFunctionsClient } = require('./home-thermostat-common');
 

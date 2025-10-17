@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: State machine for heating control based on temperature targets
+Description: '{"createdOn":"Windows","createdBy":"Amplify","createdWith":"13.0.1","stackType":"custom-customCloudformation","metadata":{"whyContinueWithGen1":""}}'
 Parameters:
   env:
     Type: String
@@ -24,12 +24,58 @@ Parameters:
     Type: String
     Description: Input parameter describing LambdaExecutionRoleArn attribute for function/homethermostatChangeState
       resource
+  functionhomethermostatStoreTaskTokenArn:
+    Type: String
+    Description: Input parameter describing Arn attribute for function/homethermostatStoreTaskToken
+      resource
   storagehomethermostatScheduledActivityName:
     Type: String
-    Default: homethermostat-scheduled-activity-dev
+    Description: Input parameter describing Name attribute for storage/homethermostatScheduledActivity
+      resource
   storagehomethermostatScheduledActivityArn:
     Type: String
-    Default: arn:aws:dynamodb:eu-west-1:056402289766:table/homethermostat-scheduled-activity-dev
+    Description: Input parameter describing Arn attribute for storage/homethermostatScheduledActivity
+      resource
+  functionhomethermostatStoreTaskTokenName:
+    Type: String
+    Description: Input parameter describing Name attribute for function/homethermostatStoreTaskToken
+      resource
+  functionhomethermostatStoreTaskTokenRegion:
+    Type: String
+    Description: Input parameter describing Region attribute for function/homethermostatStoreTaskToken
+      resource
+  functionhomethermostatStoreTaskTokenLambdaExecutionRole:
+    Type: String
+    Description: Input parameter describing LambdaExecutionRole attribute for function/homethermostatStoreTaskToken
+      resource
+  functionhomethermostatStoreTaskTokenLambdaExecutionRoleArn:
+    Type: String
+    Description: Input parameter describing LambdaExecutionRoleArn attribute for function/homethermostatStoreTaskToken
+      resource
+  storagehomethermostatScheduledActivityStreamArn:
+    Type: String
+    Description: Input parameter describing StreamArn attribute for storage/homethermostatScheduledActivity
+      resource
+  storagehomethermostatScheduledActivityPartitionKeyName:
+    Type: String
+    Description: Input parameter describing PartitionKeyName attribute for storage/homethermostatScheduledActivity
+      resource
+  storagehomethermostatScheduledActivityPartitionKeyType:
+    Type: String
+    Description: Input parameter describing PartitionKeyType attribute for storage/homethermostatScheduledActivity
+      resource
+  storagehomethermostatScheduledActivitySortKeyName:
+    Type: String
+    Description: Input parameter describing SortKeyName attribute for storage/homethermostatScheduledActivity
+      resource
+  storagehomethermostatScheduledActivitySortKeyType:
+    Type: String
+    Description: Input parameter describing SortKeyType attribute for storage/homethermostatScheduledActivity
+      resource
+  storagehomethermostatScheduledActivityRegion:
+    Type: String
+    Description: Input parameter describing Region attribute for storage/homethermostatScheduledActivity
+      resource
 Resources:
   temperatureHeatingChangeRole:
     Type: AWS::IAM::Role
@@ -51,6 +97,7 @@ Resources:
                   - lambda:InvokeFunction
                 Resource:
                   - Ref: functionhomethermostatChangeStateArn
+                  - Ref: functionhomethermostatStoreTaskTokenArn
         - PolicyName: temperatureHeatingChangeDynamoDB
           PolicyDocument:
             Statement:
@@ -80,23 +127,19 @@ Resources:
               executionArn.$: "$$.Execution.Id"
               thingName.$: "$.thingName"
               mode: 'ON'
-            ResultPath: "$"
+            ResultPath: "$.turnOnResult"
             Next: WaitForTargetTemperature
           WaitForTargetTemperature:
             Type: Task
-            Resource: arn:aws:states:::dynamodb:updateItem.waitForTaskToken
+            Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
             Parameters:
-              TableName:
-                Ref: storagehomethermostatScheduledActivityName
-              Key:
-                device:
-                  S.$: "$.thingName"
-                since:
-                  N.$: States.Format('{}', $.since)
-              UpdateExpression: SET taskToken = :taskToken
-              ExpressionAttributeValues:
-                ":taskToken":
-                  S.$: "$$.Task.Token"
+              FunctionName:
+                Ref: functionhomethermostatStoreTaskTokenArn
+              Payload:
+                taskToken.$: "$$.Task.Token"
+                thingName.$: "$.thingName"
+                since.$: "$.since"
+                dhwTargetTemperature.$: "$.dhwTargetTemperature"
             TimeoutSeconds: 3600
             ResultPath: "$.waitResult"
             Next: TurnOff
@@ -108,7 +151,8 @@ Resources:
               executionArn.$: "$$.Execution.Id"
               thingName.$: "$.thingName"
               mode: 'OFF'
-            ResultPath: "$.turnOffResult"
+              since.$: "$.since"
+            ResultPath: "$"
             Next: UpdateScheduledActivityUntil
           UpdateScheduledActivityUntil:
             Type: Task
@@ -126,7 +170,7 @@ Resources:
                 "#until": until
               ExpressionAttributeValues:
                 ":until":
-                  N.$: States.Format('{}', $$.State.EnteredTime)
+                  N.$: States.Format('{}', $.until)
             End: true
 Outputs:
   StateMachineArn:

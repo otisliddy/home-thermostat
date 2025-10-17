@@ -21,6 +21,10 @@ statusHelper.createStatus = (thingName, mode, options, since = new Date()) => {
         status.recurring = options.recurring;
     }
 
+    if (options && options.dhwTargetTemperature !== undefined) {
+        status.dhwTargetTemperature = options.dhwTargetTemperature;
+    }
+
     return status;
 }
 

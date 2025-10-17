@@ -1,16 +1,15 @@
 const { StartExecutionCommand, StopExecutionCommand } = require('@aws-sdk/client-sfn');
-const stateMachineArn = 'arn:aws:states:eu-west-1:056402289766:stateMachine:schedule-heating-change';
 
 class StepFunctionsClient {
     constructor(stepFunctions) {
         this.stepFunctions = stepFunctions;
     }
 
-    async startNewExecution(stateMachineInput) {
+    async startNewExecution(stateMachineArn, stateMachineInput) {
         const params = {
             stateMachineArn: stateMachineArn,
             input: JSON.stringify(stateMachineInput),
-            name: 'ScheduleHeatChange-' + makeId(10),
+            name: makeId(10),
         };
         console.log('Params:', params);
 

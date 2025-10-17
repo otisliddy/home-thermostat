@@ -1,18 +1,27 @@
 # Overview
-This project is for controlling home heating. The oil heating and immersion are controlled with relays connected to Arduinos.
-The Arduino code is under ./arduino. 
+
+This project is for controlling home heating. The oil heating and immersion are controlled with relays connected to
+Arduinos.
+The Arduino code is under ./arduino.
 
 AWS IoT controls the Arduino via MQTT. AWS Lambda functions interact with AWS IoT, and AWS StepFunctions
-orchestrate turning the heating on/off in the future. DynamoDB is used to persist 
-1) the current state of the heating (on/off, temperature etc) and
-2) the future scheduled changes to the heating.
-Mot AWS resources are provisioned using AWS Amplify under ./amplify.
+orchestrate turning the heating on/off in the future. DynamoDB is used to persist
+
+1) times the heating was turned on and off
+2) scheduled changes to the heating
+3) temperature of DHW
+
+Not AWS resources are provisioned using AWS Amplify under ./amplify, most notably AWS IoT was added manually.
 
 The front end is a React app under ./src.
 
 # Home Thermostat Common
-After making any changes to home-thermostat-common, ./home-thermostat-common/build.sh must be run to copy the files to 
+
+After making changes to home-thermostat-common src, ./home-thermostat-common/build.sh must be run to copy the files to
 dependent projects.
+If making any changes to ./home-thermostat-common/package.json, then run ./home-thermostat-common/build.sh with
+the `-d` flag to reinstall and copy dependencies
+
 ```
 
 # Amplify

@@ -1,12 +1,18 @@
 # October 2025
-- Stop correct workflows correctly manually changing state
-- Delete step function executions properly. Should a new one be created each time?
+- Turning off a DHW doesn't cancel execution, at least not when page isn't refreshed.
+- CancelRunningWorklow function can be deleted and SFN called directly from UI
+- Change tendency for "Immersion is currently Loading..." to show in page loading state
+UI
+- Chart for DHW temperature
+- Chart for outside temperature
+- Pass device and temperature to DHW workflow
 
 # Minor stories
 Hover delete
 Cursor on buttons
 
 # Features
+Write integration tests
 Listen to MQTT update in front end
 Setup Daily profiles using cron + eventBridge + Lambda
 Decouple BE and FE references to resources. CloudMap?

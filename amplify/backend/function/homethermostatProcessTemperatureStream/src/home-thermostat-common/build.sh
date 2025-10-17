@@ -3,6 +3,7 @@ npm config set registry https://registry.npmjs.org/
 
 # Copy source files (excluding node_modules) to Lambda functions
 copy_to_function() {
+  echo "Copying to $1"
   local target=$1
   rm -rf "$target"/*
   mkdir -p "$target"

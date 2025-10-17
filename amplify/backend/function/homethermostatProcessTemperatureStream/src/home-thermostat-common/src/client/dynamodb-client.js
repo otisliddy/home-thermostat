@@ -36,14 +36,10 @@ class DynamodbClient {
         const nowSeconds = new Date().getTime() / 1000;
         const params = {
             TableName: scheduleTableName,
-            KeyConditionExpression: 'device = :device',
-            FilterExpression: '#until > :until',
+            KeyConditionExpression: 'device = :device AND since > :since',
             ExpressionAttributeValues: {
                 ':device': {S: thingName},
-                ':until': { N: `${nowSeconds}` }
-            },
-            ExpressionAttributeNames: {
-                '#until': 'until'
+                ':since': {N: `${nowSeconds}`}
             }
         };
 

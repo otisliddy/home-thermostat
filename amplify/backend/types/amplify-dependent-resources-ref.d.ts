@@ -1,4 +1,10 @@
 export type AmplifyDependentResourcesAttributes = {
+  "custom": {
+    "homethermostatTemperatureStateChange": {
+      "StateMachineArn": "string",
+      "StateMachineName": "string"
+    }
+  },
   "function": {
     "homethermostatCancelRunningWorkflow": {
       "Arn": "string",
@@ -29,6 +35,13 @@ export type AmplifyDependentResourcesAttributes = {
       "Region": "string"
     },
     "homethermostatStartScheduleStateChange": {
+      "Arn": "string",
+      "LambdaExecutionRole": "string",
+      "LambdaExecutionRoleArn": "string",
+      "Name": "string",
+      "Region": "string"
+    },
+    "homethermostatStoreTaskToken": {
       "Arn": "string",
       "LambdaExecutionRole": "string",
       "LambdaExecutionRoleArn": "string",

@@ -12,6 +12,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const stepFunctionsClient = new StepFunctionsClient(new SFNClient({ region: process.env.REGION }));
 const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
 const scheduleTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME;
+const stateMachineArn = "arn:aws:states:eu-west-1:056402289766:stateMachine:schedule-heating-change";
 
 exports.handler = async function (event, context) {
   console.log('Event: ', event);
@@ -56,7 +57,7 @@ exports.handler = async function (event, context) {
   console.log('Starting state machine with input:', stateMachineInput);
 
   try {
-    const executionArn = await stepFunctionsClient.startNewExecution(stateMachineInput);
+    const executionArn = await stepFunctionsClient.startNewExecution(stateMachineArn, stateMachineInput);
     console.log('Successfully started execution:', executionArn);
 
     const options = {
@@ -69,8 +70,10 @@ exports.handler = async function (event, context) {
 
     console.log('Inserting scheduled activity:', status);
 
-    await dynamodbClient.insertStatus(scheduleTableName, status);
-    console.log('Successfully inserted scheduled activity');
+    if (startWaitSeconds !== 0) {
+      await dynamodbClient.insertStatus(scheduleTableName, status);
+      console.log('Successfully inserted scheduled activity');
+    }
 
     if (isRecurring) {
       return executionArn;

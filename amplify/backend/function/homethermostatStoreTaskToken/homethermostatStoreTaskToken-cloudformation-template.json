@@ -16,10 +16,6 @@
     "s3Key": {
       "Type": "String"
     },
-    "storagehomethermostatTemperatureStreamArn": {
-      "Type": "String",
-      "Default": "storagehomethermostatTemperatureStreamArn"
-    },
     "storagehomethermostatScheduledActivityName": {
       "Type": "String",
       "Default": "storagehomethermostatScheduledActivityName"
@@ -31,14 +27,6 @@
     "storagehomethermostatScheduledActivityStreamArn": {
       "Type": "String",
       "Default": "storagehomethermostatScheduledActivityStreamArn"
-    },
-    "storagehomethermostatTemperatureName": {
-      "Type": "String",
-      "Default": "storagehomethermostatTemperatureName"
-    },
-    "storagehomethermostatTemperatureArn": {
-      "Type": "String",
-      "Default": "storagehomethermostatTemperatureArn"
     }
   },
   "Conditions": {
@@ -71,12 +59,12 @@
         "FunctionName": {
           "Fn::If": [
             "ShouldNotCreateEnvResources",
-            "homethermostatProcessTemperatureStream",
+            "homethermostatStoreTaskToken",
             {
               "Fn::Join": [
                 "",
                 [
-                  "homethermostatProcessTemperatureStream",
+                  "homethermostatStoreTaskToken",
                   "-",
                   {
                     "Ref": "env"
@@ -102,15 +90,6 @@
             },
             "STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN": {
               "Ref": "storagehomethermostatScheduledActivityStreamArn"
-            },
-            "STORAGE_HOMETHERMOSTATTEMPERATURE_NAME": {
-              "Ref": "storagehomethermostatTemperatureName"
-            },
-            "STORAGE_HOMETHERMOSTATTEMPERATURE_ARN": {
-              "Ref": "storagehomethermostatTemperatureArn"
-            },
-            "STORAGE_HOMETHERMOSTATTEMPERATURE_STREAMARN": {
-              "Ref": "storagehomethermostatTemperatureStreamArn"
             }
           }
         },
@@ -131,12 +110,12 @@
         "RoleName": {
           "Fn::If": [
             "ShouldNotCreateEnvResources",
-            "homethermostatLambdaRoleeec2b0b1",
+            "homethermostatLambdaRoleb58118ae",
             {
               "Fn::Join": [
                 "",
                 [
-                  "homethermostatLambdaRoleeec2b0b1",
+                  "homethermostatLambdaRoleb58118ae",
                   "-",
                   {
                     "Ref": "env"
@@ -207,58 +186,6 @@
         }
       }
     },
-    "LambdaTriggerPolicy": {
-      "DependsOn": [
-        "LambdaExecutionRole"
-      ],
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyName": "amplify-lambda-execution-policy-",
-        "Roles": [
-          {
-            "Ref": "LambdaExecutionRole"
-          }
-        ],
-        "PolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": [
-                "dynamodb:DescribeStream",
-                "dynamodb:GetRecords",
-                "dynamodb:GetShardIterator",
-                "dynamodb:ListStreams"
-              ],
-              "Resource": {
-                "Ref": "storagehomethermostatTemperatureStreamArn"
-              }
-            }
-          ]
-        }
-      }
-    },
-    "LambdaEventSourceMapping": {
-      "Type": "AWS::Lambda::EventSourceMapping",
-      "DependsOn": [
-        "LambdaTriggerPolicy",
-        "LambdaExecutionRole"
-      ],
-      "Properties": {
-        "BatchSize": 100,
-        "Enabled": true,
-        "EventSourceArn": {
-          "Ref": "storagehomethermostatTemperatureStreamArn"
-        },
-        "FunctionName": {
-          "Fn::GetAtt": [
-            "LambdaFunction",
-            "Arn"
-          ]
-        },
-        "StartingPosition": "LATEST"
-      }
-    },
     "AmplifyResourcesPolicy": {
       "DependsOn": [
         "LambdaExecutionRole"
@@ -277,6 +204,10 @@
             {
               "Effect": "Allow",
               "Action": [
+                "dynamodb:Put*",
+                "dynamodb:Create*",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PartiQLInsert",
                 "dynamodb:Get*",
                 "dynamodb:BatchGetItem",
                 "dynamodb:List*",
@@ -298,34 +229,6 @@
                     [
                       {
                         "Ref": "storagehomethermostatScheduledActivityArn"
-                      },
-                      "index/*"
-                    ]
-                  ]
-                }
-              ]
-            },
-            {
-              "Effect": "Allow",
-              "Action": [
-                "dynamodb:Get*",
-                "dynamodb:BatchGetItem",
-                "dynamodb:List*",
-                "dynamodb:Describe*",
-                "dynamodb:Scan",
-                "dynamodb:Query",
-                "dynamodb:PartiQLSelect"
-              ],
-              "Resource": [
-                {
-                  "Ref": "storagehomethermostatTemperatureArn"
-                },
-                {
-                  "Fn::Join": [
-                    "/",
-                    [
-                      {
-                        "Ref": "storagehomethermostatTemperatureArn"
                       },
                       "index/*"
                     ]

@@ -15,15 +15,15 @@
       "function": {
         "homethermostatChangeState": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatChangeState-78625070326545493576-build.zip"
+          "s3Key": "amplify-builds/homethermostatChangeState-505965747a35674b6455-build.zip"
         },
         "homethermostatStartScheduleStateChange": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-744a6f314c6d48446348-build.zip"
+          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-3153522f6731396c7531-build.zip"
         },
         "homethermostatCancelRunningWorkflow": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatCancelRunningWorkflow-45455367584e716b374b-build.zip"
+          "s3Key": "amplify-builds/homethermostatCancelRunningWorkflow-6a42774c69635066565a-build.zip"
         },
         "homethermostatSignUp": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
@@ -31,7 +31,11 @@
         },
         "homethermostatProcessTemperatureStream": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatProcessTemperatureStream-4a5539714d485a686d64-build.zip"
+          "s3Key": "amplify-builds/homethermostatProcessTemperatureStream-59316632613073624238-build.zip"
+        },
+        "homethermostatStoreTaskToken": {
+          "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
+          "s3Key": "amplify-builds/homethermostatStoreTaskToken-556d5330536b5270724d-build.zip"
         }
       },
       "storage": {
@@ -40,7 +44,8 @@
         "homethermostatTemperature": {}
       },
       "custom": {
-        "homethermostatScheduleStateChange": {}
+        "homethermostatScheduleStateChange": {},
+        "homethermostatTemperatureStateChange": {}
       }
     }
   }

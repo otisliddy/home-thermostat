@@ -24,7 +24,44 @@
       "service": "customCloudformation"
     },
     "homethermostatTemperatureStateChange": {
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "Region",
+            "LambdaExecutionRole",
+            "LambdaExecutionRoleArn"
+          ],
+          "category": "function",
+          "resourceName": "homethermostatChangeState"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "Region",
+            "LambdaExecutionRole",
+            "LambdaExecutionRoleArn"
+          ],
+          "category": "function",
+          "resourceName": "homethermostatStoreTaskToken"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn",
+            "PartitionKeyName",
+            "PartitionKeyType",
+            "SortKeyName",
+            "SortKeyType",
+            "Region"
+          ],
+          "category": "storage",
+          "resourceName": "homethermostatScheduledActivity"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "customCloudformation"
     }
@@ -63,6 +100,15 @@
           ],
           "category": "storage",
           "resourceName": "homethermostatScheduledActivity"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "homethermostatTemperature"
         }
       ],
       "providerPlugin": "awscloudformation",
@@ -75,6 +121,22 @@
       "service": "Lambda"
     },
     "homethermostatStartScheduleStateChange": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "StreamArn"
+          ],
+          "category": "storage",
+          "resourceName": "homethermostatScheduledActivity"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "homethermostatStoreTaskToken": {
       "build": true,
       "dependsOn": [
         {
@@ -169,6 +231,22 @@
         {
           "category": "function",
           "resourceName": "homethermostatStartScheduleStateChange"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatStoreTaskToken_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatStoreTaskToken"
+        }
+      ]
+    },
+    "AMPLIFY_function_homethermostatStoreTaskToken_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "homethermostatStoreTaskToken"
         }
       ]
     }
