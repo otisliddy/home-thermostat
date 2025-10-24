@@ -1,0 +1,111 @@
+.dhw-graph-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.dhw-graph-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.dhw-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.dhw-graph-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.dhw-graph-body {
+  padding: 24px;
+  overflow: auto;
+  flex: 1;
+}
+
+.temperature-graph {
+  width: 100%;
+  height: auto;
+}
+
+.graph-loading,
+.graph-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #999;
+  font-size: 16px;
+}
+
+/* Mobile optimization */
+@media (max-width: 600px) {
+  .dhw-graph-modal-overlay {
+    padding: 0;
+  }
+
+  .dhw-graph-modal-content {
+    border-radius: 0;
+    max-height: 100vh;
+    height: 100vh;
+  }
+
+  .dhw-graph-header {
+    padding: 16px;
+  }
+
+  .dhw-graph-header h2 {
+    font-size: 18px;
+  }
+
+  .dhw-graph-body {
+    padding: 16px;
+  }
+
+  .temperature-graph {
+    font-size: 10px;
+  }
+}

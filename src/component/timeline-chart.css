@@ -1,0 +1,248 @@
+.timeline-chart {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.timeline-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
+.timeline-range {
+  font-size: 12px;
+  color: #666;
+}
+
+.timeline-container {
+  position: relative;
+  height: 80px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  margin-top: 12px;
+}
+
+/* Hour markers */
+.hour-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.hour-line {
+  width: 1px;
+  height: 100%;
+  background: #e0e0e0;
+}
+
+.hour-label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #999;
+  white-space: nowrap;
+}
+
+/* Current time indicator */
+.current-time-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.current-time-line {
+  width: 2px;
+  height: 100%;
+  background: #f44336;
+}
+
+.current-time-label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #f44336;
+  white-space: nowrap;
+}
+
+/* Timeline bars */
+.timeline-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-bar.historical {
+  opacity: 0.85;
+}
+
+.timeline-bar.historical:hover {
+  opacity: 1;
+  height: 36px;
+  z-index: 5;
+}
+
+.timeline-bar.scheduled {
+  background: transparent;
+  border: 2px dashed;
+  opacity: 0.7;
+}
+
+.timeline-bar.scheduled:hover {
+  opacity: 1;
+  height: 36px;
+  z-index: 5;
+}
+
+.recurring-indicator {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Tooltip */
+.timeline-tooltip {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 180px;
+  pointer-events: auto;
+}
+
+.timeline-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: white;
+}
+
+.tooltip-row {
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltip-row strong {
+  color: #333;
+}
+
+.recurring-badge {
+  background: #2196f3;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.tooltip-type {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+}
+
+.tooltip-delete-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.tooltip-delete-btn:hover {
+  background: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(244, 67, 54, 0.3);
+}
+
+.tooltip-delete-btn:active {
+  transform: translateY(0);
+}
+
+.tooltip-delete-btn svg {
+  flex-shrink: 0;
+}
+
+/* Mobile optimization */
+@media (max-width: 600px) {
+  .timeline-chart {
+    margin: 12px;
+    padding: 12px;
+  }
+
+  .timeline-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .timeline-range {
+    font-size: 11px;
+  }
+
+  .timeline-container {
+    height: 60px;
+  }
+
+  .timeline-bar {
+    height: 28px;
+  }
+
+  .timeline-bar:hover {
+    height: 32px;
+  }
+
+  .timeline-tooltip {
+    font-size: 12px;
+    min-width: 160px;
+    padding: 6px 10px;
+  }
+}

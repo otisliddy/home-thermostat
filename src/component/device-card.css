@@ -1,0 +1,376 @@
+.device-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  position: relative;
+}
+
+.device-card.active {
+  border: 2px solid #4caf50;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.device-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.device-name {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.device-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.off-button-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.off-button-header:hover:not(:disabled) {
+  background: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3);
+}
+
+.off-button-header:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.off-button-header:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.off-button-header svg {
+  flex-shrink: 0;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-indicator.on {
+  background-color: #4caf50;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+}
+
+.status-indicator.off {
+  background-color: #9e9e9e;
+}
+
+.status-text {
+  font-weight: 600;
+}
+
+.status-text.on {
+  color: #4caf50;
+}
+
+.status-text.off {
+  color: #9e9e9e;
+}
+
+.status-text.loading {
+  color: #ff9800;
+}
+
+.time-remaining {
+  color: #666;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.next-scheduled {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #666;
+}
+
+.clock-icon {
+  opacity: 0.7;
+}
+
+.device-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f5f5f5;
+  color: #333;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.primary {
+  background: #2196f3;
+  color: white;
+}
+
+.action-btn.primary:hover:not(:disabled) {
+  background: #1976d2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.action-btn.primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.action-btn.secondary {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.action-btn.secondary:hover:not(:disabled) {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.action-btn.danger {
+  background: #f44336;
+  color: white;
+  /* Don't span full width - let it take its natural grid position */
+}
+
+.action-btn.danger:hover:not(:disabled) {
+  background: #d32f2f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.action-btn svg {
+  flex-shrink: 0;
+}
+
+/* Picker Overlay */
+.picker-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.picker-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 320px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.picker-header h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.picker-body {
+  margin: 20px 0;
+}
+
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.duration-slider,
+.temp-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  background: #e0e0e0;
+  -webkit-appearance: none;
+}
+
+.duration-slider::-webkit-slider-thumb,
+.temp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2196f3;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.duration-slider::-moz-range-thumb,
+.temp-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2196f3;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-value {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2196f3;
+}
+
+.picker-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.picker-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.picker-btn.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.picker-btn.cancel:hover {
+  background: #e0e0e0;
+}
+
+.picker-btn.confirm {
+  background: #2196f3;
+  color: white;
+}
+
+.picker-btn.confirm:hover {
+  background: #1976d2;
+}
+
+/* Mobile optimization */
+@media (max-width: 600px) {
+  .device-card {
+    margin: 12px;
+    padding: 16px;
+  }
+
+  .device-name {
+    font-size: 18px;
+  }
+
+  .device-actions {
+    gap: 8px;
+  }
+
+  .action-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .action-btn span {
+    display: none; /* Hide text on small mobile screens */
+  }
+
+  .action-btn svg {
+    margin: 0;
+  }
+
+  .picker-content {
+    width: 85%;
+  }
+}
+
+/* Show text on slightly larger mobile screens */
+@media (min-width: 400px) {
+  .action-btn span {
+    display: inline !important;
+  }
+}
