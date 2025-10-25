@@ -9,8 +9,8 @@ import {Authenticator} from '@aws-amplify/ui-react';
 import {fetchAuthSession} from 'aws-amplify/auth';
 import {SFNClient} from '@aws-sdk/client-sfn';
 
-// New components
-import NewHeader from './component/new-header';
+// Components
+import Header from './component/header';
 import TimelineChart from './component/timeline-chart';
 import DhwGraphModal from './component/dhw-graph-modal';
 import DeviceCard from './component/device-card';
@@ -408,17 +408,14 @@ const App = () => {
   return (
     <div id="root">
       <Authenticator components={authComponents}/>
-      <div id="homethermostat-new">
+      <div id="homethermostat">
         {/* Header */}
-        <NewHeader
+        <Header
           connected={connected}
           outsideTemp={outsideTemp}
           dhwTemperature={dhwTemperature}
           onDhwClick={() => setShowDhwGraph(true)}
         />
-
-        {/* Temporary refresh button */}
-        <button onClick={syncAllStatuses}>Refresh All Statuses</button>
 
         {/* Timeline */}
         <TimelineChart

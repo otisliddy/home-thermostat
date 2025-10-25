@@ -1,4 +1,5 @@
-.new-header {
+#header,
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -81,7 +82,7 @@
 
 /* Mobile optimization */
 @media (max-width: 600px) {
-  .new-header {
+  .header {
     font-size: 13px;
     padding: 10px 12px;
     gap: 8px;

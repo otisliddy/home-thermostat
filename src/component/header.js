@@ -1,42 +1,58 @@
-import React, {Component} from 'react';
-import ConnectedIcon from '../images/connected-svgrepo-com.svg';
-import DisconnectedIcon from '../images/disconnected-svgrepo-com.svg';
+import React from 'react';
+import './header.css';
 
-const weatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather?lat=52.9807857&lon=-6.046806&appid=5796abbde9106b7da4febfae8c44c232';
+const Header = ({ connected, outsideTemp, dhwTemperature, onDhwClick }) => {
+  const formatTemp = (temp) => {
+    if (temp === null || temp === undefined) return '--';
+    return temp.toFixed(1);
+  };
 
-class Header extends Component {
-    constructor(props) {
-        super(props);
-        this.state = ({});
+  const formatDhwDisplay = () => {
+    if (!dhwTemperature) return 'DHW: --°C';
+
+    const tempDisplay = `DHW: ${dhwTemperature.temperature.toFixed(1)}°C`;
+
+    // If data is stale (older than 10 minutes), show it differently
+    if (dhwTemperature.isStale) {
+      const date = new Date(dhwTemperature.timestamp);
+      return `${tempDisplay} (${date.toLocaleTimeString()})`;
     }
 
-    componentDidMount() {
-        fetch(weatherApiUrl).then(res => res.json()).then((data) => {
-            const tempCelsius = Math.round((data.main.temp - 273.15) * 2) / 2;
-            this.setState({tempOutside: tempCelsius});
-        });
-    }
+    return tempDisplay;
+  };
 
-    render() {
-        const {dhwTemperature} = this.props;
+  return (
+    <div className="header">
+      <div className="header-item connection-status">
+        <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`} />
+        <span className="status-text">{connected ? 'Connected' : 'Offline'}</span>
+      </div>
 
-        return (
-            <div id='header'>
-                <div id='connected-status' hidden={this.props.connected === undefined}>
-                    <img src={this.props.connected ? ConnectedIcon : DisconnectedIcon} alt='Icon not found'/>
-                </div>
-                <div id='temp-outside'>Outside: {this.state.tempOutside}<sup>&#8451;</sup>
-                </div>
-                {dhwTemperature && (
-                    <div id='temp-dhw'>
-                        DHW: {dhwTemperature.temperature.toFixed(1)}<sup>&#8451;</sup>
-                        {dhwTemperature.isStale && (
-                            <span style={{fontSize: '0.8em', marginLeft: '5px'}}>({new Date(dhwTemperature.timestamp).toLocaleString()})</span>)}
-                    </div>
-                )}
-            </div>
-        );
-    }
-}
+      <div className="header-item outside-temp">
+        <span className="temp-label">Outside:</span>
+        <span className="temp-value">{formatTemp(outsideTemp)}°C</span>
+      </div>
+
+      <div
+        className="header-item dhw-temp clickable"
+        onClick={onDhwClick}
+        role="button"
+        tabIndex={0}
+        onKeyPress={(e) => e.key === 'Enter' && onDhwClick()}
+      >
+        <span className="temp-value">{formatDhwDisplay()}</span>
+        <svg
+          className="expand-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </div>
+    </div>
+  );
+};
 
 export default Header;

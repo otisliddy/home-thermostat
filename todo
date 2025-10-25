@@ -1,15 +1,7 @@
 # October 2025
-- Turning off a DHW doesn't cancel execution, at least not when page isn't refreshed.
-- CancelRunningWorklow function can be deleted and SFN called directly from UI
-- Change tendency for "Immersion is currently Loading..." to show in page loading state
-UI
-- Chart for DHW temperature
-- Chart for outside temperature
-- Pass device and temperature to DHW workflow
+- Delete old UI code
+- CancelRunningWorklow function can be deleted
 
-# Minor stories
-Hover delete
-Cursor on buttons
 
 # Features
 Write integration tests

@@ -18,7 +18,7 @@ body {
   flex-direction: column;
 }
 
-#homethermostat-new {
+#homethermostat {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -61,14 +61,14 @@ button {
 
 /* Mobile-first responsive design */
 @media (min-width: 768px) {
-  #homethermostat-new {
+  #homethermostat {
     padding: 20px;
   }
 }
 
 /* Tablet and desktop */
 @media (min-width: 1024px) {
-  #homethermostat-new {
+  #homethermostat {
     padding: 40px;
   }
 }
@@ -82,7 +82,7 @@ a:focus-visible {
 
 /* Print styles */
 @media print {
-  #homethermostat-new {
+  #homethermostat {
     background: white;
   }
 
