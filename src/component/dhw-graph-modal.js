@@ -14,9 +14,9 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
   const fetchTemperatureData = async () => {
     setLoading(true);
     try {
-      // Fetch last 3 hours of temperature data
-      const threeHoursAgo = Date.now() - (3 * 60 * 60 * 1000);
-      const threeHoursAgoSeconds = Math.floor(threeHoursAgo / 1000);
+      // Fetch last 4 hours of temperature data
+      const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
+      const fourHoursAgoSeconds = Math.floor(fourHoursAgo / 1000);
 
       // Query temperature table for ht-dhw-temp device
       const params = {
@@ -27,7 +27,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         },
         ExpressionAttributeValues: {
           ':device': { S: 'ht-dhw-temp' },
-          ':since': { N: threeHoursAgo.toString() }
+          ':since': { N: fourHoursAgo.toString() }
         },
         ScanIndexForward: true // Oldest first
       };
@@ -98,7 +98,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
       .join(' ');
 
     // Generate heating markers
-    const threeHoursAgo = Date.now() - (3 * 60 * 60 * 1000);
+    const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
     const heatingPeriods = [];
 
     if (statuses && statuses.length > 0) {
@@ -120,11 +120,11 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
           untilMs = Date.now();
         }
 
-        // Only show if within 3 hour window
-        if (untilMs > threeHoursAgo && sinceMs < Date.now()) {
+        // Only show if within 4 hour window
+        if (untilMs > fourHoursAgo && sinceMs < Date.now()) {
           heatingPeriods.push({
             device: status.device,
-            start: Math.max(sinceMs, threeHoursAgo),
+            start: Math.max(sinceMs, fourHoursAgo),
             end: Math.min(untilMs, Date.now())
           });
         }
@@ -259,7 +259,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
     <div className="dhw-graph-modal-overlay" onClick={onClose}>
       <div className="dhw-graph-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="dhw-graph-header">
-          <h2>DHW Temperature (Last 3 Hours)</h2>
+          <h2>DHW Temperature (Last 4 Hours)</h2>
           <button className="close-button" onClick={onClose}>✕</button>
         </div>
         <div className="dhw-graph-body">

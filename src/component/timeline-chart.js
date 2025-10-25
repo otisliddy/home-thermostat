@@ -1,13 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './timeline-chart.css';
 
 const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), onDeleteScheduled }) => {
   const [tooltip, setTooltip] = useState(null);
+  const scrollContainerRef = useRef(null);
 
-  // Timeline spans 12 hours past + 24 hours future
-  const startTime = currentTime - (12 * 60 * 60 * 1000);
+  // Timeline spans 24 hours past + 24 hours future (total width)
+  const startTime = currentTime - (24 * 60 * 60 * 1000);
   const endTime = currentTime + (24 * 60 * 60 * 1000);
   const totalDuration = endTime - startTime;
+
+  // Scroll to show 4 hours before and after current time on mount
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      // Wait for render to complete
+      setTimeout(() => {
+        const scrollableWidth = container.scrollWidth;
+        // Calculate position: -4h from now should be at left edge
+        // Timeline goes from -24h to +24h, so -4h is at (24-4)/48 = 20/48 = 41.67%
+        const scrollPercent = 20 / 48; // 20 hours into a 48 hour timeline
+        const scrollPosition = scrollPercent * scrollableWidth;
+        container.scrollLeft = scrollPosition;
+      }, 0);
+    }
+  }, []);
 
   // Convert timestamp to position percentage
   const timeToPercent = (timestamp) => {
@@ -163,8 +180,8 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltip({
       ...activity,
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top
+      x: rect.left + (rect.width / 2),
+      y: rect.top
     });
   };
 
@@ -181,7 +198,8 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
         </span>
       </div>
 
-      <div className="timeline-container">
+      <div className="timeline-scroll-wrapper" ref={scrollContainerRef}>
+        <div className="timeline-container">
         {/* Hour markers */}
         {hourMarkers.map((marker, idx) => (
           <div
@@ -250,50 +268,53 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
           );
         })}
 
-        {/* Tooltip */}
-        {tooltip && (
-          <div
-            className="timeline-tooltip"
-            style={{
-              left: `${timeToPercent(tooltip.start)}%`,
-              transform: 'translateX(-50%)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="tooltip-row">
-              <strong>{getDeviceName(tooltip.device)}</strong>
-              {tooltip.recurring && <span className="recurring-badge">Recurring</span>}
-            </div>
-            <div className="tooltip-row">
-              {formatTime(tooltip.originalStart)} - {formatTime(tooltip.originalEnd)}
-            </div>
-            <div className="tooltip-row">
-              Duration: {formatDuration(tooltip.originalStart, tooltip.originalEnd)}
-            </div>
-            {tooltip.dhwTargetTemperature && (
-              <div className="tooltip-row">
-                Target: {tooltip.dhwTargetTemperature}°C
-              </div>
-            )}
-            <div className="tooltip-type">{tooltip.type === 'scheduled' ? 'Scheduled' : 'Historical'}</div>
-            {tooltip.type === 'scheduled' && onDeleteScheduled && (
-              <button
-                className="tooltip-delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteScheduled(tooltip.originalActivity);
-                  setTooltip(null);
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                </svg>
-                Delete
-              </button>
-            )}
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* Tooltip - outside scroll wrapper, uses fixed positioning */}
+      {tooltip && (
+        <div
+          className="timeline-tooltip"
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            transform: 'translate(-50%, calc(-100% - 8px))'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="tooltip-row">
+            <strong>{getDeviceName(tooltip.device)}</strong>
+            {tooltip.recurring && <span className="recurring-badge">Recurring</span>}
+          </div>
+          <div className="tooltip-row">
+            {formatTime(tooltip.originalStart)} - {formatTime(tooltip.originalEnd)}
+          </div>
+          <div className="tooltip-row">
+            Duration: {formatDuration(tooltip.originalStart, tooltip.originalEnd)}
+          </div>
+          {tooltip.dhwTargetTemperature && (
+            <div className="tooltip-row">
+              Target: {tooltip.dhwTargetTemperature}°C
+            </div>
+          )}
+          <div className="tooltip-type">{tooltip.type === 'scheduled' ? 'Scheduled' : 'Historical'}</div>
+          {tooltip.type === 'scheduled' && onDeleteScheduled && (
+            <button
+              className="tooltip-delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteScheduled(tooltip.originalActivity);
+                setTooltip(null);
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

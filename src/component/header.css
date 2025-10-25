@@ -92,7 +92,7 @@
     font-size: 13px;
   }
 
-  .status-text {
+  .header .status-text {
     display: none; /* Hide "Connected" text on mobile to save space */
   }
 }

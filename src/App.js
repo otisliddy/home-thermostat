@@ -428,7 +428,7 @@ const App = () => {
         {/* Device Cards */}
         <DeviceCard
           device="ht-main"
-          deviceName="Oil Heating"
+          deviceName="Oil"
           status={oilStatus}
           scheduledActivity={scheduledActivity}
           onTurnOn={(duration) => handleTurnOn('ht-main', duration)}
@@ -442,13 +442,13 @@ const App = () => {
           <HistoryStats
             statuses={statuses}
             device="ht-main"
-            deviceName="Oil Heating"
+            deviceName="Oil"
           />
         )}
 
         <DeviceCard
           device="ht-immersion"
-          deviceName="Immersion Heating"
+          deviceName="Immersion"
           status={immersionStatus}
           scheduledActivity={scheduledActivity}
           onTurnOn={(duration) => handleTurnOn('ht-immersion', duration)}
@@ -462,7 +462,7 @@ const App = () => {
           <HistoryStats
             statuses={statuses}
             device="ht-immersion"
-            deviceName="Immersion Heating"
+            deviceName="Immersion"
           />
         )}
 

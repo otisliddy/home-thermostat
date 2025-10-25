@@ -255,7 +255,7 @@
 
 .slider-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 16px;
 }
 
@@ -365,6 +365,17 @@
 
   .picker-content {
     width: 85%;
+  }
+
+  .off-button-header {
+    font-size: 12px;
+    padding: 5px 10px;
+    gap: 3px;
+  }
+
+  .off-button-header svg {
+    width: 14px;
+    height: 14px;
   }
 }
 
