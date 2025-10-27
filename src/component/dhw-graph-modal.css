@@ -85,12 +85,13 @@
 @media (max-width: 600px) {
   .dhw-graph-modal-overlay {
     padding: 0;
+    padding-top: 60px;
   }
 
   .dhw-graph-modal-content {
-    border-radius: 0;
-    max-height: 100vh;
-    height: 100vh;
+    border-radius: 12px 12px 0 0;
+    max-height: calc(100vh - 60px);
+    height: calc(100vh - 60px);
   }
 
   .dhw-graph-header {

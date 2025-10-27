@@ -14,9 +14,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
   const fetchTemperatureData = async () => {
     setLoading(true);
     try {
-      // Fetch last 4 hours of temperature data
-      const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
-      const fourHoursAgoSeconds = Math.floor(fourHoursAgo / 1000);
+      const startMsAgo = Date.now() - (6 * 60 * 60 * 1000);
 
       // Query temperature table for ht-dhw-temp device
       const params = {
@@ -27,7 +25,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         },
         ExpressionAttributeValues: {
           ':device': { S: 'ht-dhw-temp' },
-          ':since': { N: fourHoursAgo.toString() }
+          ':since': { N: startMsAgo.toString() }
         },
         ScanIndexForward: true // Oldest first
       };
@@ -108,15 +106,18 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
 
         const sinceMs = status.since > 10000000000 ? status.since : status.since * 1000;
 
-        // Determine end time
+        // Determine end time - prioritize next status over 'until' field
         let untilMs;
-        if (status.until) {
-          untilMs = status.until > 10000000000 ? status.until : status.until * 1000;
-        } else if (i > 0) {
+        if (i > 0) {
+          // Use next status's start time as end (handles early turn-off)
           untilMs = statuses[i - 1].since > 10000000000
             ? statuses[i - 1].since
             : statuses[i - 1].since * 1000;
+        } else if (status.until) {
+          // Use until field only if there's no next status
+          untilMs = status.until > 10000000000 ? status.until : status.until * 1000;
         } else {
+          // Still running
           untilMs = Date.now();
         }
 

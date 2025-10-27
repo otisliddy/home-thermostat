@@ -234,7 +234,11 @@ const App = () => {
         console.log('Lambda response:', responseText);
       }
 
-      await syncAllStatuses();
+      setTimeout(async () => {await Promise.all([
+          fetchTimelineAndScheduledActivity(),
+          fetchHistoricalStatuses()
+        ]);
+      }, 1000);
     } catch (error) {
       console.error('Error turning on:', error);
       if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
@@ -266,7 +270,11 @@ const App = () => {
       await dynamodbClient.insertStatus(scheduleTableName, status);
       console.log('Successfully inserted temperature schedule status');
 
-      await syncAllStatuses();
+      setTimeout(async () => {await Promise.all([
+        fetchTimelineAndScheduledActivity(),
+        fetchHistoricalStatuses()
+      ]);
+      }, 1000);
     } catch (error) {
       console.error('Error starting temperature schedule:', error);
       alert('Error starting temperature schedule');
@@ -320,7 +328,10 @@ const App = () => {
       const status = statusHelper.createStatus(device, modes.OFF.val, {});
       await dynamodbClient.insertStatus(stateTableName, status);
 
-      await syncAllStatuses();
+      await Promise.all([
+        fetchTimelineAndScheduledActivity(),
+        fetchHistoricalStatuses()
+      ]);
     } catch (error) {
       console.error('Error turning off:', error);
       if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
@@ -350,7 +361,7 @@ const App = () => {
       await lambda.send(command);
 
       setScheduleModalShow(false);
-      await syncAllStatuses();
+      await fetchTimelineAndScheduledActivity();
     } catch (error) {
       console.error('Error scheduling:', error);
       if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
@@ -388,7 +399,7 @@ const App = () => {
     try {
       await cancelExecution(activity.executionArn);
       await dynamodbClient.delete(scheduleTableName, activity.device, activity.since);
-      await syncAllStatuses();
+      await fetchTimelineAndScheduledActivity();
     } catch (error) {
       console.error('Error deleting scheduled activity:', error);
       alert('Error deleting scheduled activity.');

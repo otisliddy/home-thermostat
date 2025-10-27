@@ -1,10 +1,10 @@
 # October 2025
-- Delete old UI code
+- Get UI working better for unauth users
 - CancelRunningWorklow function can be deleted
+- Make DHW flow turn off when temperature flattens out
 
 
 # Features
 Write integration tests
 Listen to MQTT update in front end
-Setup Daily profiles using cron + eventBridge + Lambda
 Decouple BE and FE references to resources. CloudMap?

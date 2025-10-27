@@ -15,7 +15,7 @@ const DeviceCard = ({
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showTempPicker, setShowTempPicker] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(30);
-  const [targetTemp, setTargetTemp] = useState(42);
+  const [targetTemp, setTargetTemp] = useState(41);
 
   const isCurrentlyOn = status?.device === device && status?.mode === 'On';
   const isLoading = status?.mode === 'Loading...';
@@ -227,7 +227,7 @@ const DeviceCard = ({
                 <input
                   type="range"
                   min="30"
-                  max="60"
+                  max="52"
                   step="0.5"
                   value={targetTemp}
                   onChange={(e) => setTargetTemp(parseFloat(e.target.value))}
