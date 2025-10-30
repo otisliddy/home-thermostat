@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { statusHelper } from 'home-thermostat-common';
 import './history-stats.css';
 
 const HistoryStats = ({ statuses, device, deviceName }) => {
@@ -32,15 +33,9 @@ const HistoryStats = ({ statuses, device, deviceName }) => {
       if (status.since < sinceDaysAgoSeconds) break;
 
       const nextStatus = i > 0 ? statuses[i - 1] : null;
-      let untilSeconds;
 
-      if (status.until) {
-        untilSeconds = status.until;
-      } else if (nextStatus) {
-        untilSeconds = nextStatus.since;
-      } else {
-        untilSeconds = Date.now() / 1000;
-      }
+      // Use helper to calculate actual end time
+      const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, Date.now());
 
       const durationSeconds = untilSeconds - status.since;
       totalSeconds += durationSeconds;

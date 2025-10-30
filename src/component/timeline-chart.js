@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { statusHelper } from 'home-thermostat-common';
 import './timeline-chart.css';
 
 const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), onDeleteScheduled }) => {
@@ -67,22 +68,10 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
         ? (status.since > 10000000000 ? status.since : status.since * 1000)
         : status.since;
 
-      // Determine end time - prioritize next status over 'until' field
-      let until;
-      if (i > 0) {
-        // Use next status's start time as end (handles early turn-off)
-        until = statuses[i - 1].since > 10000000000
-          ? statuses[i - 1].since
-          : statuses[i - 1].since * 1000;
-      } else if (status.until) {
-        // Use until field only if there's no next status
-        until = typeof status.until === 'number'
-          ? (status.until > 10000000000 ? status.until : status.until * 1000)
-          : status.until;
-      } else {
-        // Still running
-        until = currentTime;
-      }
+      // Use helper to calculate actual end time
+      const nextStatus = i > 0 ? statuses[i - 1] : null;
+      const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, currentTime);
+      const until = untilSeconds > 10000000000 ? untilSeconds : untilSeconds * 1000;
 
       // Only show if visible in timeline
       if (until > startTime && since < endTime) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { statusHelper } from 'home-thermostat-common';
 import './dhw-graph-modal.css';
 
 const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, statuses }) => {
@@ -106,20 +107,10 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
 
         const sinceMs = status.since > 10000000000 ? status.since : status.since * 1000;
 
-        // Determine end time - prioritize next status over 'until' field
-        let untilMs;
-        if (i > 0) {
-          // Use next status's start time as end (handles early turn-off)
-          untilMs = statuses[i - 1].since > 10000000000
-            ? statuses[i - 1].since
-            : statuses[i - 1].since * 1000;
-        } else if (status.until) {
-          // Use until field only if there's no next status
-          untilMs = status.until > 10000000000 ? status.until : status.until * 1000;
-        } else {
-          // Still running
-          untilMs = Date.now();
-        }
+        // Use helper to calculate actual end time
+        const nextStatus = i > 0 ? statuses[i - 1] : null;
+        const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, Date.now());
+        const untilMs = untilSeconds > 10000000000 ? untilSeconds : untilSeconds * 1000;
 
         // Only show if within 4 hour window
         if (untilMs > fourHoursAgo && sinceMs < Date.now()) {
@@ -139,12 +130,18 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
       yAxisTicks.push(temp);
     }
 
-    // Generate X-axis labels
+    // Generate X-axis labels at every hour
     const xAxisTicks = [];
-    const timeStep = timeRange / 6;
-    for (let i = 0; i <= 6; i++) {
-      const time = minTime + (timeStep * i);
-      xAxisTicks.push(time);
+    const startDate = new Date(minTime);
+    // Round up to next hour
+    startDate.setHours(startDate.getHours() + 1, 0, 0, 0);
+
+    let currentTickTime = startDate.getTime();
+    while (currentTickTime <= maxTime) {
+      if (currentTickTime >= minTime) {
+        xAxisTicks.push(currentTickTime);
+      }
+      currentTickTime += (60 * 60 * 1000); // Add 1 hour
     }
 
     return (
@@ -167,7 +164,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
           );
         })}
 
-        {/* Grid lines */}
+        {/* Horizontal grid lines (temperature) */}
         {yAxisTicks.map((temp, idx) => (
           <line
             key={`grid-y-${idx}`}
@@ -175,6 +172,19 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
             y1={scaleY(temp)}
             x2={padding.left + graphWidth}
             y2={scaleY(temp)}
+            stroke="#e0e0e0"
+            strokeWidth="1"
+          />
+        ))}
+
+        {/* Vertical grid lines (time) */}
+        {xAxisTicks.map((time, idx) => (
+          <line
+            key={`grid-x-${idx}`}
+            x1={scaleX(time)}
+            y1={padding.top}
+            x2={scaleX(time)}
+            y2={padding.top + graphHeight}
             stroke="#e0e0e0"
             strokeWidth="1"
           />
@@ -225,7 +235,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
             fontSize="12"
             fill="#666"
           >
-            {new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(time).toLocaleTimeString([], { hour: 'numeric', hour12: true })}
           </text>
         ))}
 

@@ -2,7 +2,7 @@
 - Get UI working better for unauth users
 - CancelRunningWorklow function can be deleted
 - Make DHW flow turn off when temperature flattens out
-
+- Make DHW flow schedulable and recurring
 
 # Features
 Write integration tests
