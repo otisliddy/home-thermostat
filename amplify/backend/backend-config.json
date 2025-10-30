@@ -67,12 +67,6 @@
     }
   },
   "function": {
-    "homethermostatCancelRunningWorkflow": {
-      "build": true,
-      "dependsOn": [],
-      "providerPlugin": "awscloudformation",
-      "service": "Lambda"
-    },
     "homethermostatChangeState": {
       "build": true,
       "dependsOn": [
@@ -154,22 +148,6 @@
     }
   },
   "parameters": {
-    "AMPLIFY_function_homethermostatCancelRunningWorkflow_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "homethermostatCancelRunningWorkflow"
-        }
-      ]
-    },
-    "AMPLIFY_function_homethermostatCancelRunningWorkflow_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "homethermostatCancelRunningWorkflow"
-        }
-      ]
-    },
     "AMPLIFY_function_homethermostatChangeState_deploymentBucketName": {
       "usedBy": [
         {

@@ -41,7 +41,6 @@ const temperatureTableName = 'homethermostat-temperature-dev';
 let lambda, dynamodbClient, stepFunctionsClient, iotData;
 
 const App = () => {
-  const [status, setStatus] = useState({mode: 'Loading...'});
   const [scheduleModalShow, setScheduleModalShow] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null); // For schedule modal
   const [connected, setConnected] = useState(false);
@@ -63,7 +62,7 @@ const App = () => {
   });
 
   useEffect(() => {
-    fetchAuthSession().then(creds => {
+    fetchAuthSession().then(() => {
       setUserAndSyncStatus();
     });
     fetchOutsideTemperature();

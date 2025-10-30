@@ -6,13 +6,6 @@ export type AmplifyDependentResourcesAttributes = {
     }
   },
   "function": {
-    "homethermostatCancelRunningWorkflow": {
-      "Arn": "string",
-      "LambdaExecutionRole": "string",
-      "LambdaExecutionRoleArn": "string",
-      "Name": "string",
-      "Region": "string"
-    },
     "homethermostatChangeState": {
       "Arn": "string",
       "LambdaExecutionRole": "string",
