@@ -273,7 +273,7 @@ const App = () => {
         fetchTimelineAndScheduledActivity(),
         fetchHistoricalStatuses()
       ]);
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error('Error starting temperature schedule:', error);
       alert('Error starting temperature schedule');

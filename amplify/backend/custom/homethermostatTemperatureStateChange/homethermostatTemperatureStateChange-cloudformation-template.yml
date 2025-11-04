@@ -140,9 +140,14 @@ Resources:
                 thingName.$: "$.thingName"
                 since.$: "$.since"
                 dhwTargetTemperature.$: "$.dhwTargetTemperature"
-            TimeoutSeconds: 3600
             ResultPath: "$.waitResult"
             Next: TurnOff
+            TimeoutSeconds: 3600
+            Catch:
+              - ErrorEquals:
+                  - States.Timeout
+                Next: TurnOff
+                ResultPath: "$.timeoutError"
           TurnOff:
             Type: Task
             Resource:
