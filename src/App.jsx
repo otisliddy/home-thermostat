@@ -57,7 +57,9 @@ const App = () => {
 
   useEffect(() => {
     const unsubscribe = Hub.listen('auth', async (data) => {
-      if ('signIn' === data.payload.event) {
+      // Amplify v6 renamed this event from 'signIn'. Under the old name the app only picked up
+      // credentials on a page reload, never straight after signing in.
+      if ('signedIn' === data.payload.event) {
         await setUserAndSyncStatus();
       }
     });
