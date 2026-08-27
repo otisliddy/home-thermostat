@@ -11,9 +11,17 @@ orchestrate turning the heating on/off in the future. DynamoDB is used to persis
 2) scheduled changes to the heating
 3) temperature of DHW
 
-Not AWS resources are provisioned using AWS Amplify under ./amplify, most notably AWS IoT was added manually.
+Not all AWS resources are provisioned using AWS Amplify under ./amplify, most notably AWS IoT was added manually.
 
 The front end is a React app under ./src.
+
+# Getting Started
+
+```
+nvm use
+npm install
+npm start
+```
 
 # Home Thermostat Common
 
@@ -34,7 +42,17 @@ The lambdas run on the nodejs22.x runtime, matching the Node version in .nvmrc.
 
 # React
 
-The front end is built with [Vite](https://vite.dev). Node 22 (see .nvmrc).
+The front end is built with [Vite](https://vite.dev). A few things follow from that:
+
+- ./index.html at the project root is the entry point, and it loads /src/index.jsx.
+- Files containing JSX use the .jsx extension. Vite does not parse JSX out of a .js file.
+- Static assets in ./public are served from the root, so ./public/favicon.ico is /favicon.ico.
+- The Vite and ESLint configs are vite.config.mjs and eslint.config.mjs. They are .mjs rather than .js because the
+  package itself is CommonJS.
+
+Front end tests sit next to the code they cover as `src/**/*.test.js(x)` and run under
+[Vitest](https://vitest.dev). The home-thermostat-common tests are in home-thermostat-common/test and run under
+[Mocha](https://mochajs.org).
 
 ## Available Scripts
 
@@ -42,13 +60,12 @@ In the project directory, you can run:
 
 ### `npm start`
 
-Runs the app in development mode on [http://localhost:3000](http://localhost:3000), with hot module replacement.
-`npm run dev` does the same thing.
+Runs the app in development mode on [http://localhost:3000](http://localhost:3000) and opens a browser, with hot
+module replacement. `npm run dev` does the same thing.
 
 ### `npm test`
 
-Runs the front end tests with [Vitest](https://vitest.dev) and the home-thermostat-common tests with
-[Mocha](https://mochajs.org), once each.
+Runs the Vitest and Mocha suites, once each.
 
 ### `npm run build`
 
