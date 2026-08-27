@@ -1,8 +1,5 @@
 const sinon = require("sinon");
-const chai = require("chai");
-const sinonChai = require("sinon-chai");
-chai.use(sinonChai);
-const expect = chai.expect;
+const expect = require("chai").expect;
 
 const { DynamodbClient, modes } = require('..');
 

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { QueryCommand } from '@aws-sdk/client-dynamodb';
 import { statusHelper } from 'home-thermostat-common';
 import './dhw-graph-modal.css';
 
@@ -34,9 +35,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         ScanIndexForward: true // Oldest first
       };
 
-      const data = await dynamodbClient.dynamodb.send(
-        new (await import('@aws-sdk/client-dynamodb')).QueryCommand(params)
-      );
+      const data = await dynamodbClient.dynamodb.send(new QueryCommand(params));
 
       if (data.Items) {
         const temps = data.Items.map(item => ({
@@ -100,8 +99,6 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
       .join(' ');
 
     // Generate heating markers
-    // Must match the window the temperatures were fetched over, otherwise heating is shaded
-    // over only part of the plotted line.
     const graphStartMs = Date.now() - GRAPH_WINDOW_MS;
     const heatingPeriods = [];
 

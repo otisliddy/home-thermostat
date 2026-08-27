@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {InvokeCommand, LambdaClient} from '@aws-sdk/client-lambda';
 import {DynamoDBClient} from '@aws-sdk/client-dynamodb';
 import {GetThingShadowCommand, IoTDataPlaneClient, UpdateThingShadowCommand} from '@aws-sdk/client-iot-data-plane';
 import {DynamodbClient, modes, statusHelper, StepFunctionsClient} from 'home-thermostat-common';
 import {Amplify} from 'aws-amplify';
-import {Hub} from '@aws-amplify/core';
+import {Hub} from 'aws-amplify/utils';
 import {Authenticator} from '@aws-amplify/ui-react';
 import {fetchAuthSession} from 'aws-amplify/auth';
 import {SFNClient} from '@aws-sdk/client-sfn';
@@ -56,8 +56,6 @@ const App = () => {
   const [immersionStatus, setImmersionStatus] = useState({mode: 'Loading...'});
 
   useEffect(() => {
-    // Hub.listen returns its unsubscribe function. Registering outside an effect would add a
-    // listener on every render.
     const unsubscribe = Hub.listen('auth', async (data) => {
       if ('signIn' === data.payload.event) {
         await setUserAndSyncStatus();
@@ -120,9 +118,8 @@ const App = () => {
   }
 
   async function syncAllStatuses() {
-    // The shadow only reports on/off, so it is read first and then overwritten by the richer
-    // status from DynamoDB, which also carries 'until' and 'executionArn'. Running both at once
-    // lets the shadow win the race and silently drop those fields.
+    // The shadow reports only on/off, so it is read before the DynamoDB statuses that
+    // overwrite it with 'until' and 'executionArn'; run together, the shadow can win the race.
     await Promise.all([
       syncDeviceStatus('ht-main', setOilStatus),
       syncDeviceStatus('ht-immersion', setImmersionStatus)
@@ -271,9 +268,7 @@ const App = () => {
 
       console.log('Started temperature state machine:', executionArn);
 
-      // The state machine keys the scheduled activity item on 'since', so the status must be
-      // created with the exact same value, otherwise the task token and 'until' written by the
-      // state machine land on a separate item.
+      // The state machine keys the scheduled activity item on this same 'since'.
       const status = statusHelper.createStatus(device, modes.ON.val, {
         executionArn: executionArn,
         dhwTargetTemperature: targetTemp

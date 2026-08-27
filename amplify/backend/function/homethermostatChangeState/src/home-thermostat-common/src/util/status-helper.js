@@ -69,7 +69,7 @@ statusHelper.findStatusConsideringDuplicates = (items, startingIndex) => {
 statusHelper.dynamoItemToStatus = (dynamoItem) => {
     const status = {};
     for (const key in dynamoItem) {
-        if (dynamoItem.hasOwnProperty(key) && key !== 'expireAt') {
+        if (Object.prototype.hasOwnProperty.call(dynamoItem, key) && key !== 'expireAt') {
             if (dynamoItem[key].N) {
                 status[key] = Number(dynamoItem[key]['N']);
             } else if (dynamoItem[key].BOOL !== undefined) {
@@ -82,16 +82,9 @@ statusHelper.dynamoItemToStatus = (dynamoItem) => {
     return status;
 }
 
-/**
- * Find the status that follows the one at the given index, for the same device.
- * Statuses are expected in reverse chronological order (newest first), so the
- * following status sits at a lower index. Statuses of other devices are skipped,
- * otherwise a status would be cut short by unrelated activity on another device.
- *
- * @param {Array} statuses - Statuses, newest first, possibly for several devices
- * @param {number} index - Index of the status to find the successor of
- * @returns {Object|null} The next status for the same device, or null if it is the most recent
- */
+/*
+* Statuses are ordered newest first, so the following status sits at a lower index.
+*/
 statusHelper.findNextStatusForDevice = (statuses, index) => {
     const status = statuses[index];
     for (let i = index - 1; i >= 0; i--) {
@@ -115,8 +108,7 @@ statusHelper.findNextStatusForDevice = (statuses, index) => {
 statusHelper.getActualEndTime = (status, nextStatus, currentTime = Date.now()) => {
     const currentTimeSeconds = Math.floor(currentTime / 1000);
 
-    // Priority 1: Use next status's start time (handles early turn-off), but never
-    // run past 'until'; the next status can be much later if no 'off' was recorded.
+    // Priority 1: Use next status's start time (handles early turn-off)
     if (nextStatus) {
         return status.until ? Math.min(nextStatus.since, status.until) : nextStatus.since;
     }

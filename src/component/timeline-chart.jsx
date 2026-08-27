@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { statusHelper } from 'home-thermostat-common';
 import './timeline-chart.css';
 

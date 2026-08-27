@@ -18,17 +18,23 @@ The front end is a React app under ./src.
 # Home Thermostat Common
 
 After making changes to home-thermostat-common src, ./home-thermostat-common/build.sh must be run to copy the files to
-dependent projects.
-If making any changes to ./home-thermostat-common/package.json, then run ./home-thermostat-common/build.sh with
-the `-d` flag to reinstall and copy dependencies
+the lambdas that depend on them. It installs the runtime dependencies and copies index.js, package.json, src and
+node_modules; the tests and the lock file are deliberately not deployed.
 
-```
+Its test tooling lives in the root package.json, because npm does not apply the root's dependency overrides to a
+file:-linked package's own dependencies.
 
 # Amplify
+
+```
 amplify pull --appId d36tefta7j8ppr --envName dev
+```
+
+The lambdas run on the nodejs22.x runtime, matching the Node version in .nvmrc.
+
 # React
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The front end is built with [Vite](https://vite.dev). Node 22 (see .nvmrc).
 
 ## Available Scripts
 
@@ -36,13 +42,22 @@ In the project directory, you can run:
 
 ### `npm start`
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+Runs the app in development mode on [http://localhost:3000](http://localhost:3000), with hot module replacement.
+`npm run dev` does the same thing.
 
 ### `npm test`
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Runs the front end tests with [Vitest](https://vitest.dev) and the home-thermostat-common tests with
+[Mocha](https://mochajs.org), once each.
+
+### `npm run build`
+
+Builds the app for production into ./build, which is the DistributionDir Amplify deploys.
+
+### `npm run preview`
+
+Serves the contents of ./build locally, to check a production build before deploying it.
+
+### `npm run lint`
+
+Runs ESLint over the front end and home-thermostat-common.

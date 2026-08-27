@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './device-card.css';
 
 const DeviceCard = ({
@@ -15,7 +15,7 @@ const DeviceCard = ({
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showTempPicker, setShowTempPicker] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(30);
-  const [targetTemp, setTargetTemp] = useState(41);
+  const [targetTemp, setTargetTemp] = useState(38.5);
 
   const isCurrentlyOn = status?.device === device && status?.mode === 'On';
   const isLoading = status?.mode === 'Loading...';
@@ -45,8 +45,6 @@ const DeviceCard = ({
     const toMs = (seconds) => (seconds > 10000000000 ? seconds : seconds * 1000);
     const nowMs = Date.now();
 
-    // Scheduled activity also carries activity that is already running, which is shown as the
-    // current status rather than as the next one.
     const deviceScheduled = scheduledActivity
       .filter(activity => activity.device === device && toMs(activity.since) > nowMs)
       .sort((a, b) => a.since - b.since);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { statusHelper } from 'home-thermostat-common';
 import './history-stats.css';
 

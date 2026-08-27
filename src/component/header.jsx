@@ -1,4 +1,3 @@
-import React from 'react';
 import './header.css';
 
 const Header = ({ connected, outsideTemp, dhwTemperature, onDhwClick }) => {
@@ -12,8 +11,6 @@ const Header = ({ connected, outsideTemp, dhwTemperature, onDhwClick }) => {
 
     const tempDisplay = `DHW: ${dhwTemperature.temperature.toFixed(1)}°C`;
 
-    // If data is stale (older than 10 minutes), show when it was read. The day is part of it,
-    // otherwise a reading from days ago is indistinguishable from one taken this morning.
     if (dhwTemperature.isStale) {
       const date = new Date(dhwTemperature.timestamp);
       const reading = date.toLocaleString([], {

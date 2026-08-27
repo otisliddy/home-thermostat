@@ -18,26 +18,19 @@ class DynamodbClient {
             }
         };
 
-        try {
-            const data = await this.dynamodb.send(new QueryCommand(params));
-            let statuses = [];
-            data.Items.forEach(status => {
-                statuses.push(statusHelper.dynamoItemToStatus(status));
-            });
-            statuses = statuses.sort((a, b) => (parseInt(a.since) < parseInt(b.since)) ? 1 : -1);
-            statuses = statusHelper.findStatusesConsideringDuplicates(statuses);
-            return statuses;
-        } catch (err) {
-            throw err;
-        }
+        const data = await this.dynamodb.send(new QueryCommand(params));
+        let statuses = [];
+        data.Items.forEach(status => {
+            statuses.push(statusHelper.dynamoItemToStatus(status));
+        });
+        statuses = statuses.sort((a, b) => (parseInt(a.since) < parseInt(b.since)) ? 1 : -1);
+        return statusHelper.findStatusesConsideringDuplicates(statuses);
     }
 
-    /**
-     * Returns the activity that is still to come, plus any activity that started in the last
-     * day and has not finished yet (an 'until' is only written once the activity completes).
-     * In-progress activity has to be included, otherwise a running DHW heat-up is invisible
-     * to the UI and its step function execution cannot be cancelled.
-     */
+    /*
+    * Includes in-progress activity as well as upcoming, an 'until' only being written once
+    * the activity completes.
+    */
     async getScheduledActivity(thingName) {
         const nowSeconds = Math.floor(new Date().getTime() / 1000);
         const oneDayAgoSeconds = nowSeconds - 24 * 60 * 60;
@@ -50,19 +43,15 @@ class DynamodbClient {
             }
         };
 
-        try {
-            const data = await this.dynamodb.send(new QueryCommand(params));
-            const statuses = [];
-            data.Items.forEach(item => {
-                const status = statusHelper.dynamoItemToStatus(item);
-                if (status.since > nowSeconds || !status.until) {
-                    statuses.push(status);
-                }
-            });
-            return statuses;
-        } catch (err) {
-            throw err;
-        }
+        const data = await this.dynamodb.send(new QueryCommand(params));
+        const statuses = [];
+        data.Items.forEach(item => {
+            const status = statusHelper.dynamoItemToStatus(item);
+            if (status.since > nowSeconds || !status.until) {
+                statuses.push(status);
+            }
+        });
+        return statuses;
     }
 
     async insertStatus(tableName, status) {
@@ -137,7 +126,7 @@ function statusToDynamoItem(status) {
 
     const item = {};
     for (const key in status) {
-        if (status.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(status, key)) {
             if (typeof status[key] === 'boolean') {
                 item[key] = { BOOL: status[key] }
             } else if (isNumeric(status[key])) {
@@ -151,8 +140,7 @@ function statusToDynamoItem(status) {
 }
 
 /*
-* Empty strings and null are not numbers, even though isNaN() says otherwise. Writing them
-* as a DynamoDB number would be rejected by DynamoDB at runtime.
+* isNaN() accepts empty strings and null, so numbers are detected explicitly instead.
 */
 function isNumeric(value) {
     if (typeof value === 'number') {
