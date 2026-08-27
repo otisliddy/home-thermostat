@@ -66,3 +66,46 @@ describe('getActualEndTime', function () {
         expect(statusHelper.getActualEndTime({ since: 100 }, null, 500000)).to.equal(500);
     });
 });
+
+describe('isScheduledActivityRunning', () => {
+    const now = 1787864226;
+    const nowMillis = now * 1000;
+
+    it('an activity that has not started yet is still pending', () => {
+        const activity = { since: now + 3600, until: now + 7200 };
+        expect(statusHelper.isScheduledActivityRunning(activity, [], nowMillis)).to.equal(true);
+    });
+
+    it('an activity inside its window is running', () => {
+        const activity = { since: now - 600, until: now + 600 };
+        expect(statusHelper.isScheduledActivityRunning(activity, [], nowMillis)).to.equal(true);
+    });
+
+    it('an activity past its until has finished', () => {
+        const activity = { since: now - 3600, until: now - 600 };
+        expect(statusHelper.isScheduledActivityRunning(activity, [], nowMillis)).to.equal(false);
+    });
+
+    it('an open-ended activity with no later off is still running', () => {
+        const activity = { since: now - 600 };
+        const statuses = [{ mode: modes.ON.val, since: now - 600 }];
+        expect(statusHelper.isScheduledActivityRunning(activity, statuses, nowMillis)).to.equal(true);
+    });
+
+    // The aborted DHW run: the execution died at 19:40 without ever writing an until, so only the
+    // recorded Off tells us it ended.
+    it('an open-ended activity is finished once the device is recorded off', () => {
+        const activity = { since: 1787856037 };
+        const statuses = [
+            { mode: modes.OFF.val, since: 1787856041 },
+            { mode: modes.ON.val, since: 1787856037 }
+        ];
+        expect(statusHelper.isScheduledActivityRunning(activity, statuses, nowMillis)).to.equal(false);
+    });
+
+    it('an off recorded before the activity started does not end it', () => {
+        const activity = { since: now - 600 };
+        const statuses = [{ mode: modes.OFF.val, since: now - 900 }];
+        expect(statusHelper.isScheduledActivityRunning(activity, statuses, nowMillis)).to.equal(true);
+    });
+});

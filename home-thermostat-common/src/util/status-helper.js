@@ -1,3 +1,5 @@
+const { modes } = require('../constants/modes');
+
 const statusHelper = {};
 
 /*
@@ -120,6 +122,28 @@ statusHelper.getActualEndTime = (status, nextStatus, currentTime = Date.now()) =
 
     // Priority 3: Still running, use current time
     return currentTimeSeconds;
+}
+
+/*
+* A scheduled activity is left open-ended on purpose when it runs to a temperature target rather
+* than for a fixed duration, so 'no until' cannot by itself mean 'still running'. If the execution
+* behind it is aborted or fails, nothing ever writes the until and the activity would otherwise be
+* drawn as running forever. A recorded Off for the device after it started ends it.
+*
+* deviceStatuses must be the statuses of the activity's own device.
+*/
+statusHelper.isScheduledActivityRunning = (activity, deviceStatuses = [], currentTime = Date.now()) => {
+    const nowSeconds = Math.floor(currentTime / 1000);
+
+    if (activity.since > nowSeconds) {
+        return true;
+    }
+
+    if (activity.until) {
+        return activity.until > nowSeconds;
+    }
+
+    return !deviceStatuses.some((status) => status.mode === modes.OFF.val && status.since >= activity.since);
 }
 
 module.exports = statusHelper;

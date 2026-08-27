@@ -201,8 +201,15 @@ const App = () => {
         setImmersionStatus(immersionStatuses[0]);
       }
 
-      // Combine scheduled activities from both devices
-      const allScheduled = [...oilScheduled, ...immersionScheduled];
+      // Drop activities whose execution died without closing them off, otherwise an aborted DHW
+      // run is drawn as still heating indefinitely.
+      const stillRunning = (scheduled, deviceStatuses) =>
+        scheduled.filter((activity) => statusHelper.isScheduledActivityRunning(activity, deviceStatuses));
+
+      const allScheduled = [
+        ...stillRunning(oilScheduled, oilStatuses),
+        ...stillRunning(immersionScheduled, immersionStatuses)
+      ];
       setScheduledActivity(allScheduled);
     } catch (error) {
       console.error('Error fetching timeline and scheduled activity:', error);
