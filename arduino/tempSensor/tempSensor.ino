@@ -10,16 +10,12 @@ const char* PASSWORD = "qwertytreW1%";
 
 const char* AWS_IOT_ENDPOINT = "a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com";
 const char* SHADOW_TOPIC_UPDATE = "$aws/things/ht-dhw-temp/shadow/name/ht-dhw-temp_shadow/update";
-// Sensor failures go to their own topic. Reporting them into the shadow would make the
-// DwhTempToDynamoDB rule store another row holding the last good temperature, which would
-// look like a fresh reading.
 const char* STATUS_TOPIC = "ht-dhw-temp/status";
 
 const int TEMP_PIN = D2;
 const unsigned long publishInterval = 60000; // 1 minute in milliseconds
 const int READ_ATTEMPTS = 3;
-// A DS18B20 reports 85.0 exactly when it is read before its first conversion completes, which
-// is well above anything the cylinder reaches.
+// A DS18B20 reports exactly 85.0 when read before its first conversion completes.
 const float POWER_ON_RESET_TEMP_C = 85.0;
 
 OneWire oneWire(TEMP_PIN);
@@ -71,8 +67,7 @@ void mqttLoop() {
     connectToAwsIot();
   }
 
-  // Sends the MQTT keep alive. Without it the broker drops the connection whenever a reading
-  // fails, and the sketch spends its time reconnecting instead of publishing.
+  // Sends the MQTT keep alive, without which the broker drops the connection.
   mqttClient.poll();
 
   publishTemperature();
@@ -110,8 +105,7 @@ void publishTemperature() {
 }
 
 /*
-* Returns the temperature in celsius, or NaN if the sensor could not be read. A single bad read
-* is common, so it is retried before giving up.
+* Returns the temperature in celsius, or NaN if the sensor could not be read.
 */
 float readTemperature() {
   for (int attempt = 0; attempt < READ_ATTEMPTS; attempt++) {

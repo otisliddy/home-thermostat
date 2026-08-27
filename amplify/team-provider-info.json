@@ -15,11 +15,11 @@
       "function": {
         "homethermostatChangeState": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatChangeState-536a4e465475776b3467-build.zip"
+          "s3Key": "amplify-builds/homethermostatChangeState-6241594c505570342b47-build.zip"
         },
         "homethermostatStartScheduleStateChange": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-4f4645616a3970336c5a-build.zip"
+          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-6771635044735a6f6b58-build.zip"
         },
         "homethermostatSignUp": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
@@ -27,7 +27,7 @@
         },
         "homethermostatProcessTemperatureStream": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatProcessTemperatureStream-6562564b53394243654e-build.zip"
+          "s3Key": "amplify-builds/homethermostatProcessTemperatureStream-6a7479454a526742362b-build.zip"
         },
         "homethermostatStoreTaskToken": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",

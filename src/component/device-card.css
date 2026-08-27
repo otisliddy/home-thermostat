@@ -253,10 +253,12 @@
   margin: 20px 0;
 }
 
+/* Reversed so the value sits above the slider, far enough up that a finger on the thumb
+   does not cover it. */
 .slider-container {
   display: flex;
   flex-direction: column-reverse;
-  gap: 16px;
+  gap: 48px;
 }
 
 .duration-slider,

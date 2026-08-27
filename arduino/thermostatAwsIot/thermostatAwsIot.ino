@@ -129,8 +129,7 @@ void mqttLoop() {
 }
 
 void connectToAwsIot() {
-  // MQTT allows a single last will per connection, so setting a second one only replaces the
-  // first. It goes on the main topic because that is the shadow the UI reads 'connected' from.
+  // MQTT allows a single last will per connection, so a second beginWill would replace this.
   String willPayload = "{\"state\":{\"reported\":{\"connected\":false}}}";
   mqttClient.beginWill(MAIN_TOPIC_UPDATE, willPayload.length(), false, 1);
   mqttClient.print(willPayload);
