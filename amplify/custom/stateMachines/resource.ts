@@ -1,4 +1,5 @@
 import { CfnStateMachine } from 'aws-cdk-lib/aws-stepfunctions';
+import { Arn, ArnFormat, Stack } from 'aws-cdk-lib';
 import { Role, ServicePrincipal, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
 import type { Backend } from '../../backend';
@@ -200,11 +201,27 @@ export function defineStateMachines(backend: Backend, scheduledActivityTable: Ta
     definitionString: stack.toJsonString(TEMPERATURE_DEFINITION),
   });
 
-  // The lambda and the front end read these rather than hardcoding an ARN, which is what tied
-  // the Gen 1 code to a single environment.
+  // Built from the name rather than read off the resource. Referencing scheduleHeatingChange.ref
+  // here would make the function stack depend on this one, which already depends on the function
+  // stack for the ARNs above, and CloudFormation rejects the cycle.
+  const scheduleStateMachineArn = Arn.format(
+    {
+      service: 'states',
+      resource: 'stateMachine',
+      resourceName: `schedule-heating-change-${branchName}`,
+      arnFormat: ArnFormat.COLON_RESOURCE_NAME,
+    },
+    Stack.of(backend.homethermostatStartScheduleStateChange.resources.lambda)
+  );
   backend.homethermostatStartScheduleStateChange.addEnvironment(
     'SCHEDULE_STATE_MACHINE_ARN',
-    scheduleHeatingChange.ref
+    scheduleStateMachineArn
+  );
+  backend.homethermostatStartScheduleStateChange.resources.lambda.addToRolePolicy(
+    new PolicyStatement({
+      actions: ['states:StartExecution', 'states:StopExecution'],
+      resources: [scheduleStateMachineArn],
+    })
   );
 
   return { scheduleHeatingChange, temperatureHeatingChange };
