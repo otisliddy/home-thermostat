@@ -5,7 +5,7 @@
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
 Amplify Params - DO NOT EDIT */
-const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('./home-thermostat-common');
+const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('home-thermostat-common');
 const { SFNClient } = require('@aws-sdk/client-sfn');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 

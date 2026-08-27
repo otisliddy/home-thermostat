@@ -6,7 +6,7 @@
     STORAGE_HOMETHERMOSTATDEVICESTATE_STREAMARN
 Amplify Params - DO NOT EDIT */
 
-const { modes, DynamodbClient, statusHelper } = require('./home-thermostat-common');
+const { modes, DynamodbClient, statusHelper } = require('home-thermostat-common');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { IoTDataPlaneClient, UpdateThingShadowCommand } = require('@aws-sdk/client-iot-data-plane');
 
