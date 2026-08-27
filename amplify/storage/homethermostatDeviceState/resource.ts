@@ -12,7 +12,7 @@ export function defineStorageHomethermostatDeviceState(backend: Backend) {
   const storageHomethermostatDeviceStateStack = backend.createStack(
     'storagehomethermostatDeviceState'
   );
-  new Table(
+  const table = new Table(
     storageHomethermostatDeviceStateStack,
     'homethermostat_device_state',
     {
@@ -32,6 +32,8 @@ export function defineStorageHomethermostatDeviceState(backend: Backend) {
     (cfnResource as CfnResource).addOverride('UpdateReplacePolicy', 'Retain');
     (cfnResource as CfnResource).addOverride('DeletionPolicy', 'Retain');
   }
+
+  return table;
 }
 
 export function postRefactor(homethermostat_device_state: Table) {

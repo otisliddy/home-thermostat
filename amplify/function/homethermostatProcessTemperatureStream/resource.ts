@@ -18,8 +18,7 @@ export const homethermostatProcessTemperatureStream = defineFunction({
 export function applyEscapeHatches(
   backend: Backend,
   homethermostatscheduledactivity: Table,
-  homethermostattemperature: Table,
-  homethermostatTemperature: Table
+  homethermostattemperature: Table
 ) {
   backend.homethermostatProcessTemperatureStream.resources.cfnResources.cfnFunction.functionName = `homethermostatProcessTemperatureStream-${branchName}`;
   backend.homethermostatProcessTemperatureStream.addEnvironment(
@@ -87,14 +86,14 @@ export function applyEscapeHatches(
     'dynamodb:PartiQLSelect'
   );
   backend.homethermostatProcessTemperatureStream.resources.lambda.addEventSource(
-    new DynamoEventSource(homethermostatTemperature, {
+    new DynamoEventSource(homethermostattemperature, {
       startingPosition: StartingPosition.LATEST,
     })
   );
-  homethermostatTemperature.grantStreamRead(
+  homethermostattemperature.grantStreamRead(
     backend.homethermostatProcessTemperatureStream.resources.lambda.role!
   );
-  homethermostatTemperature.grantTableListStreams(
+  homethermostattemperature.grantTableListStreams(
     backend.homethermostatProcessTemperatureStream.resources.lambda.role!
   );
 }

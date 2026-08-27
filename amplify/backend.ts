@@ -6,6 +6,7 @@ import * as homethermostatStoreTaskToken from './function/homethermostatStoreTas
 import * as storageHomethermostatDeviceState from './storage/homethermostatDeviceState/resource';
 import * as storageHomethermostatScheduledActivity from './storage/homethermostatScheduledActivity/resource';
 import * as storageHomethermostatTemperature from './storage/homethermostatTemperature/resource';
+import * as stateMachines from './custom/stateMachines/resource';
 import { defineBackend } from '@aws-amplify/backend';
 import { Tags } from 'aws-cdk-lib';
 
@@ -24,15 +25,31 @@ const homethermostatScheduledActivity =
   storageHomethermostatScheduledActivity.defineStorageHomethermostatScheduledActivity(backend);
 const homethermostatTemperature = storageHomethermostatTemperature.defineStorageHomethermostatTemperature(backend);
 
-homethermostatChangeState.applyEscapeHatches(backend, homethermostatdevicestate);
+homethermostatChangeState.applyEscapeHatches(backend, homethermostatDeviceState);
 homethermostatProcessTemperatureStream.applyEscapeHatches(
   backend,
-  homethermostatscheduledactivity,
-  homethermostattemperature
+  homethermostatScheduledActivity,
+  homethermostatTemperature
 );
 homethermostatSignUp.applyEscapeHatches(backend);
-homethermostatStartScheduleStateChange.applyEscapeHatches(backend, homethermostatscheduledactivity);
-homethermostatStoreTaskToken.applyEscapeHatches(backend, homethermostatscheduledactivity);
+homethermostatStartScheduleStateChange.applyEscapeHatches(backend, homethermostatScheduledActivity);
+homethermostatStoreTaskToken.applyEscapeHatches(backend, homethermostatScheduledActivity);
+
+// Ported by hand: the migration tool skips the Gen 1 customCloudformation resources.
+const { temperatureHeatingChange } = stateMachines.defineStateMachines(backend, homethermostatScheduledActivity);
+
+// The front end reads these from amplify_outputs.json instead of hardcoding Gen 1 ARNs, which
+// only resolved in the 'dev' environment.
+backend.addOutput({
+  custom: {
+    startScheduleStateChangeFunctionArn:
+      backend.homethermostatStartScheduleStateChange.resources.lambda.functionArn,
+    temperatureStateMachineArn: temperatureHeatingChange.ref,
+    deviceStateTableName: homethermostatDeviceState.tableName,
+    scheduledActivityTableName: homethermostatScheduledActivity.tableName,
+    temperatureTableName: homethermostatTemperature.tableName,
+  },
+});
 
 export function postRefactor() {
   storageHomethermostatDeviceState.postRefactor(homethermostatDeviceState);

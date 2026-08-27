@@ -12,7 +12,8 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const stepFunctionsClient = new StepFunctionsClient(new SFNClient({ region: process.env.REGION }));
 const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
 const scheduleTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME;
-const stateMachineArn = "arn:aws:states:eu-west-1:056402289766:stateMachine:schedule-heating-change";
+// Gen 2 names the state machine per branch, so the ARN is injected rather than hardcoded.
+const stateMachineArn = process.env.SCHEDULE_STATE_MACHINE_ARN;
 
 exports.handler = async function (event, context) {
   console.log('Event: ', event);

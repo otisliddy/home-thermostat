@@ -12,7 +12,7 @@ export function defineStorageHomethermostatTemperature(backend: Backend) {
   const storageHomethermostatTemperatureStack = backend.createStack(
     'storagehomethermostatTemperature'
   );
-  new Table(
+  const table = new Table(
     storageHomethermostatTemperatureStack,
     'homethermostat_temperature',
     {
@@ -34,6 +34,8 @@ export function defineStorageHomethermostatTemperature(backend: Backend) {
     (cfnResource as CfnResource).addOverride('UpdateReplacePolicy', 'Retain');
     (cfnResource as CfnResource).addOverride('DeletionPolicy', 'Retain');
   }
+
+  return table;
 }
 
 export function postRefactor(homethermostat_temperature: Table) {

@@ -12,7 +12,7 @@ export function defineStorageHomethermostatScheduledActivity(backend: Backend) {
   const storageHomethermostatScheduledActivityStack = backend.createStack(
     'storagehomethermostatScheduledActivity'
   );
-  new Table(
+  const table = new Table(
     storageHomethermostatScheduledActivityStack,
     'homethermostat_scheduled_activity',
     {
@@ -32,6 +32,8 @@ export function defineStorageHomethermostatScheduledActivity(backend: Backend) {
     (cfnResource as CfnResource).addOverride('UpdateReplacePolicy', 'Retain');
     (cfnResource as CfnResource).addOverride('DeletionPolicy', 'Retain');
   }
+
+  return table;
 }
 
 export function postRefactor(homethermostat_scheduled_activity: Table) {
