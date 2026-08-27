@@ -58,5 +58,6 @@ export function postRefactor() {
   Tags.of(backend.stack).add('gen2-migration/post-refactor', 'true');
 }
 
-// Uncomment after refactor
-// postRefactor();
+// Must stay uncommented now that the refactor has run. It pins the moved tables to their real
+// names; without it the next deployment would replace them.
+postRefactor();
