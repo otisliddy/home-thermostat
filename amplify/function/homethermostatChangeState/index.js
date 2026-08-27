@@ -6,9 +6,9 @@
     STORAGE_HOMETHERMOSTATDEVICESTATE_STREAMARN
 Amplify Params - DO NOT EDIT */
 
-const { modes, DynamodbClient, statusHelper } = require('home-thermostat-common');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { IoTDataPlaneClient, UpdateThingShadowCommand } = require('@aws-sdk/client-iot-data-plane');
+import { modes, DynamodbClient, statusHelper } from 'home-thermostat-common';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { IoTDataPlaneClient, UpdateThingShadowCommand } from '@aws-sdk/client-iot-data-plane';
 
 const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
 const iotDataClient = new IoTDataPlaneClient({
@@ -17,7 +17,7 @@ const iotDataClient = new IoTDataPlaneClient({
 });
 const stateTableName = process.env.STORAGE_HOMETHERMOSTATDEVICESTATE_NAME;
 
-exports.handler = async function (event, context) {
+export const handler = async (event, context) => {
     console.log('Payload: ', event);
 
     // Extract parameters from the new simplified structure

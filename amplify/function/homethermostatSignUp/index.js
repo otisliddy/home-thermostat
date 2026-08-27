@@ -2,11 +2,11 @@
     ENV
     REGION
 Amplify Params - DO NOT EDIT */
-const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 const sesClient = new SESClient({ region: process.env.REGION });
 
-exports.handler = async function (event) {
+export const handler = async (event) => {
     console.log('event', event);
     const params = {
         Destination: {

@@ -9,9 +9,9 @@
 	STORAGE_HOMETHERMOSTATTEMPERATURE_STREAMARN
 Amplify Params - DO NOT EDIT */
 
-const {SFNClient, SendTaskSuccessCommand} = require('@aws-sdk/client-sfn');
-const {DynamoDBClient} = require('@aws-sdk/client-dynamodb');
-const {QueryCommand} = require('@aws-sdk/client-dynamodb');
+import {SFNClient, SendTaskSuccessCommand} from '@aws-sdk/client-sfn';
+import {DynamoDBClient} from '@aws-sdk/client-dynamodb';
+import {QueryCommand} from '@aws-sdk/client-dynamodb';
 
 const sfnClient = new SFNClient({region: process.env.REGION});
 const dynamodbClient = new DynamoDBClient({region: process.env.REGION});
@@ -22,7 +22,7 @@ const scheduledActivityTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDAC
  * When a temperature reading comes in, checks if any active scheduled activities
  * are waiting for a temperature target to be reached.
  */
-exports.handler = async (event) => {
+export const handler = async (event) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
 
     for (const record of event.Records) {

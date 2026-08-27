@@ -5,9 +5,9 @@
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
 Amplify Params - DO NOT EDIT */
-const { StepFunctionsClient, DynamodbClient, statusHelper, modes } = require('home-thermostat-common');
-const { SFNClient } = require('@aws-sdk/client-sfn');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+import { StepFunctionsClient, DynamodbClient, statusHelper, modes } from 'home-thermostat-common';
+import { SFNClient } from '@aws-sdk/client-sfn';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 
 const stepFunctionsClient = new StepFunctionsClient(new SFNClient({ region: process.env.REGION }));
 const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
@@ -15,7 +15,7 @@ const scheduleTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NA
 // Gen 2 names the state machine per branch, so the ARN is injected rather than hardcoded.
 const stateMachineArn = process.env.SCHEDULE_STATE_MACHINE_ARN;
 
-exports.handler = async function (event, context) {
+export const handler = async (event, context) => {
   console.log('Event: ', event);
 
   // Extract parameters - for initial invocation they come from App.js

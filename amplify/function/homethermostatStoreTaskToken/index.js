@@ -6,8 +6,8 @@
 	STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_STREAMARN
 Amplify Params - DO NOT EDIT */
 
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { UpdateItemCommand } = require('@aws-sdk/client-dynamodb');
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 
 const dynamodbClient = new DynamoDBClient({ region: process.env.REGION });
 const scheduledActivityTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME;
@@ -17,7 +17,7 @@ const scheduledActivityTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDAC
  * This function is called with .waitForTaskToken, so it returns immediately
  * but the state machine waits for an external SendTaskSuccess call.
  */
-exports.handler = async (event) => {
+export const handler = async (event) => {
     console.log('Store Task Token Event:', JSON.stringify(event));
 
     const { taskToken, thingName, since, dhwTargetTemperature } = event;
