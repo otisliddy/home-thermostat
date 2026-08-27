@@ -15,23 +15,23 @@
       "function": {
         "homethermostatChangeState": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatChangeState-6241594c505570342b47-build.zip"
+          "s3Key": "amplify-builds/homethermostatChangeState-322b4c64647252455732-build.zip"
         },
         "homethermostatStartScheduleStateChange": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-6771635044735a6f6b58-build.zip"
+          "s3Key": "amplify-builds/homethermostatStartScheduleStateChange-3033517444314e687563-build.zip"
         },
         "homethermostatSignUp": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatSignUp-46636e71457a4552584a-build.zip"
+          "s3Key": "amplify-builds/homethermostatSignUp-52794c706d6d674a7233-build.zip"
         },
         "homethermostatProcessTemperatureStream": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatProcessTemperatureStream-6a7479454a526742362b-build.zip"
+          "s3Key": "amplify-builds/homethermostatProcessTemperatureStream-642b686a302b444e5a45-build.zip"
         },
         "homethermostatStoreTaskToken": {
           "deploymentBucketName": "amplify-homethermostat-dev-182043-deployment",
-          "s3Key": "amplify-builds/homethermostatStoreTaskToken-684f3668416a4e4b5573-build.zip"
+          "s3Key": "amplify-builds/homethermostatStoreTaskToken-2f526b30726879366662-build.zip"
         }
       },
       "storage": {
