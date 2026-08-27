@@ -5,25 +5,15 @@ chai.use(sinonChai);
 const expect = chai.expect;
 
 const { DynamodbClient, modes } = require('..');
-const AWS = require('aws-sdk');
-const dynamodbStub = new AWS.DynamoDB();
-const dynamodbClient = new DynamodbClient(dynamodbStub);
 
 describe('getStatuses', function () {
 
-    let sinonSandbox;
     let data;
+    let dynamodbClient;
 
-    beforeEach((done) => {
+    beforeEach(() => {
         data = { Items: [] };
-        sinonSandbox = sinon.createSandbox();
-        sinonSandbox.stub(dynamodbStub, 'query').yields(null, data);
-        done();
-    });
-
-    afterEach((done) => {
-        sinonSandbox.restore();
-        done();
+        dynamodbClient = new DynamodbClient({ send: sinon.stub().resolves(data) });
     });
 
     it('no items returns empty array', function (done) {
@@ -119,9 +109,72 @@ describe('getStatuses', function () {
         }).catch((err) => done(err));
     });
 
+    it('keeps the decimals of a temperature target', function (done) {
+        data.Items.push({
+            mode: { S: modes.ON.val },
+            since: { N: '1000' },
+            dhwTargetTemperature: { N: '41.5' }
+        });
+
+        dynamodbClient.getStatuses().then((statuses) => {
+            expect(statuses[0].dhwTargetTemperature).to.equal(41.5);
+            done();
+        }).catch((err) => done(err));
+    });
+
     function addDataItem(mode, since, options = {}) {
         const dataItem = {
             mode: { S: mode.val }, since: { N: since.toString() }, expireAt: { N: '100' }
+        };
+        if (options.until) {
+            dataItem.until = { N: options.until.toString() }
+        }
+        data.Items.push(dataItem);
+    }
+});
+
+describe('getScheduledActivity', function () {
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    let data;
+    let dynamodbClient;
+
+    beforeEach(() => {
+        data = { Items: [] };
+        dynamodbClient = new DynamodbClient({ send: sinon.stub().resolves(data) });
+    });
+
+    it('returns activity that has not started yet', function (done) {
+        addDataItem(nowSeconds + 3600, { until: nowSeconds + 7200 });
+
+        dynamodbClient.getScheduledActivity('ht-main').then((statuses) => {
+            expect(statuses).to.have.length(1);
+            expect(statuses[0].since).to.equal(nowSeconds + 3600);
+            done();
+        }).catch((err) => done(err));
+    });
+
+    it('returns activity that has started but not finished', function (done) {
+        addDataItem(nowSeconds - 600);
+
+        dynamodbClient.getScheduledActivity('ht-main').then((statuses) => {
+            expect(statuses).to.have.length(1);
+            done();
+        }).catch((err) => done(err));
+    });
+
+    it('does not return activity that has finished', function (done) {
+        addDataItem(nowSeconds - 600, { until: nowSeconds - 300 });
+
+        dynamodbClient.getScheduledActivity('ht-main').then((statuses) => {
+            expect(statuses).to.have.length(0);
+            done();
+        }).catch((err) => done(err));
+    });
+
+    function addDataItem(since, options = {}) {
+        const dataItem = {
+            device: { S: 'ht-main' }, mode: { S: modes.ON.val }, since: { N: since.toString() }
         };
         if (options.until) {
             dataItem.until = { N: options.until.toString() }

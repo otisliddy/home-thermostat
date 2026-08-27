@@ -69,7 +69,7 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
         : status.since;
 
       // Use helper to calculate actual end time
-      const nextStatus = i > 0 ? statuses[i - 1] : null;
+      const nextStatus = statusHelper.findNextStatusForDevice(statuses, i);
       const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, currentTime);
       const until = untilSeconds > 10000000000 ? untilSeconds : untilSeconds * 1000;
 

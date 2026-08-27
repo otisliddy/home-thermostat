@@ -55,17 +55,21 @@ const App = () => {
   const [oilStatus, setOilStatus] = useState({mode: 'Loading...'});
   const [immersionStatus, setImmersionStatus] = useState({mode: 'Loading...'});
 
-  Hub.listen('auth', async (data) => {
-    if ('signIn' === data.payload.event) {
-      await setUserAndSyncStatus();
-    }
-  });
-
   useEffect(() => {
+    // Hub.listen returns its unsubscribe function. Registering outside an effect would add a
+    // listener on every render.
+    const unsubscribe = Hub.listen('auth', async (data) => {
+      if ('signIn' === data.payload.event) {
+        await setUserAndSyncStatus();
+      }
+    });
+
     fetchAuthSession().then(() => {
       setUserAndSyncStatus();
     });
     fetchOutsideTemperature();
+
+    return unsubscribe;
   }, []);
 
   async function fetchOutsideTemperature() {
@@ -116,9 +120,15 @@ const App = () => {
   }
 
   async function syncAllStatuses() {
+    // The shadow only reports on/off, so it is read first and then overwritten by the richer
+    // status from DynamoDB, which also carries 'until' and 'executionArn'. Running both at once
+    // lets the shadow win the race and silently drop those fields.
     await Promise.all([
       syncDeviceStatus('ht-main', setOilStatus),
-      syncDeviceStatus('ht-immersion', setImmersionStatus),
+      syncDeviceStatus('ht-immersion', setImmersionStatus)
+    ]);
+
+    await Promise.all([
       fetchDhwTemperature(),
       fetchTimelineAndScheduledActivity(),
       fetchHistoricalStatuses()
@@ -261,10 +271,13 @@ const App = () => {
 
       console.log('Started temperature state machine:', executionArn);
 
+      // The state machine keys the scheduled activity item on 'since', so the status must be
+      // created with the exact same value, otherwise the task token and 'until' written by the
+      // state machine land on a separate item.
       const status = statusHelper.createStatus(device, modes.ON.val, {
         executionArn: executionArn,
         dhwTargetTemperature: targetTemp
-      });
+      }, new Date(since * 1000));
 
       await dynamodbClient.insertStatus(scheduleTableName, status);
       console.log('Successfully inserted temperature schedule status');

@@ -32,7 +32,7 @@ const HistoryStats = ({ statuses, device, deviceName }) => {
       // Stop if we've gone past our date range
       if (status.since < sinceDaysAgoSeconds) break;
 
-      const nextStatus = i > 0 ? statuses[i - 1] : null;
+      const nextStatus = statusHelper.findNextStatusForDevice(statuses, i);
 
       // Use helper to calculate actual end time
       const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, Date.now());

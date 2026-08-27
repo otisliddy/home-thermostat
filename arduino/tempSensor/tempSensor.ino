@@ -10,9 +10,17 @@ const char* PASSWORD = "qwertytreW1%";
 
 const char* AWS_IOT_ENDPOINT = "a1t0rh7vtg6i19-ats.iot.eu-west-1.amazonaws.com";
 const char* SHADOW_TOPIC_UPDATE = "$aws/things/ht-dhw-temp/shadow/name/ht-dhw-temp_shadow/update";
+// Sensor failures go to their own topic. Reporting them into the shadow would make the
+// DwhTempToDynamoDB rule store another row holding the last good temperature, which would
+// look like a fresh reading.
+const char* STATUS_TOPIC = "ht-dhw-temp/status";
 
 const int TEMP_PIN = D2;
 const unsigned long publishInterval = 60000; // 1 minute in milliseconds
+const int READ_ATTEMPTS = 3;
+// A DS18B20 reports 85.0 exactly when it is read before its first conversion completes, which
+// is well above anything the cylinder reaches.
+const float POWER_ON_RESET_TEMP_C = 85.0;
 
 OneWire oneWire(TEMP_PIN);
 DallasTemperature sensors(&oneWire);
@@ -54,9 +62,18 @@ void loop() {
 }
 
 void mqttLoop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connection lost, reconnecting");
+    setUpWiFi();
+  }
+
   if (!mqttClient.connected()) {
     connectToAwsIot();
   }
+
+  // Sends the MQTT keep alive. Without it the broker drops the connection whenever a reading
+  // fails, and the sketch spends its time reconnecting instead of publishing.
+  mqttClient.poll();
 
   publishTemperature();
 }
@@ -72,11 +89,11 @@ void connectToAwsIot() {
 }
 
 void publishTemperature() {
-  sensors.requestTemperatures();
-  float temperatureC = sensors.getTempCByIndex(0);
+  float temperatureC = readTemperature();
 
-  if (temperatureC == DEVICE_DISCONNECTED_C) {
+  if (isnan(temperatureC)) {
     Serial.println("Error: Could not read temperature data");
+    publishMessage(STATUS_TOPIC, "{\"sensorError\":\"could not read temperature\"}");
     return;
   }
 
@@ -92,9 +109,32 @@ void publishTemperature() {
   publishMessage(SHADOW_TOPIC_UPDATE, jsonPayload.c_str());
 }
 
+/*
+* Returns the temperature in celsius, or NaN if the sensor could not be read. A single bad read
+* is common, so it is retried before giving up.
+*/
+float readTemperature() {
+  for (int attempt = 0; attempt < READ_ATTEMPTS; attempt++) {
+    sensors.requestTemperatures();
+    float temperatureC = sensors.getTempCByIndex(0);
+
+    if (temperatureC != DEVICE_DISCONNECTED_C && temperatureC != POWER_ON_RESET_TEMP_C) {
+      return temperatureC;
+    }
+
+    Serial.print("Bad temperature reading: "); Serial.println(temperatureC);
+    delay(1000);
+  }
+
+  return NAN;
+}
+
 void publishMessage(const char* topic, const char* message) {
   Serial.println(String("Publishing to '") + topic + "' message: " + message);
   mqttClient.beginMessage(topic);
   mqttClient.print(message);
-  mqttClient.endMessage();
+  if (!mqttClient.endMessage()) {
+    Serial.println("Publish failed, disconnecting so the next loop reconnects");
+    mqttClient.stop();
+  }
 }

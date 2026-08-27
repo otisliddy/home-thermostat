@@ -100,7 +100,7 @@ exports.handler = async (event) => {
  * - dhwTargetTemperature is not null
  */
 async function getAllActiveTemperatureTasks() {
-    const twentyFourHoursAgo = Date.now() / 1000 - (24 * 60 * 60 * 1000);
+    const twentyFourHoursAgo = Math.floor(Date.now() / 1000) - (24 * 60 * 60);
     const devices = ['ht-main', 'ht-immersion'];
     const activeTasks = [];
 

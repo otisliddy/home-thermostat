@@ -1,16 +1,3 @@
-import dateformat from 'dateformat';
-
-function toFormattedDate(dateSeconds) {
-  const date = new Date(dateSeconds * 1000);
-  const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-  if (date < oneDayAgo) {
-    return dateformat(date, "dd mmm HH:MM");
-  } else {
-    return dateformat(date, "HH:MM");
-  }
-}
-
 function hoursMinsToSecondsFromNow(hoursMins) {
   const date = hoursMinsToDate(hoursMins);
   let secondsFromNow = (date.getTime() - new Date().getTime()) / 1000;
@@ -19,12 +6,12 @@ function hoursMinsToSecondsFromNow(hoursMins) {
 }
 
 function hoursMinsToDate(hoursMins) {
-  const startHour = hoursMins.split(':')[0];
-  const startMinute = hoursMins.split(':')[1];
+  const startHour = parseInt(hoursMins.split(':')[0], 10);
+  const startMinute = parseInt(hoursMins.split(':')[1], 10);
   const date = new Date();
-  date.setHours(startHour);
-  date.setMinutes(startMinute);
-  date.setSeconds(0);
+  // Milliseconds have to be cleared too, otherwise the scheduled time carries the sub-second
+  // part of 'now' and the state machine fires a fraction of a second early or late.
+  date.setHours(startHour, startMinute, 0, 0);
   if (date.getTime() < new Date().getTime()) {
     date.setTime(date.getTime() + 1000 * 3600 * 24);
   }
@@ -49,21 +36,22 @@ function generateTimeDiffText(dateSeconds) {
   let diffText = '';
   let leadingSpace = '';
   const date = new Date(dateSeconds * 1000);
-  let secondsDiff = Math.abs((new Date().getTime() - date.getTime()) / 1000);
-  if (secondsDiff > 3600 * 24) {
+  // Rounded, so that a time an exact 90 minutes away does not read as 1 hour 29 minutes.
+  let secondsDiff = Math.round(Math.abs((new Date().getTime() - date.getTime()) / 1000));
+  if (secondsDiff >= 3600 * 24) {
     const days = Math.floor(secondsDiff / (3600 * 24));
     secondsDiff -= days * 3600 * 24;
     leadingSpace = ' ';
     diffText += days === 1 ? `${days} day` : `${days} days`;
   }
-  if (secondsDiff > 3600) {
+  if (secondsDiff >= 3600) {
     const hours = Math.floor(secondsDiff / (3600));
     secondsDiff -= hours * 3600;
     diffText += leadingSpace;
     leadingSpace = ' ';
     diffText += hours === 1 ? `${hours} hour` : `${hours} hours`;
   }
-  if (secondsDiff > 60) {
+  if (secondsDiff >= 60) {
     const mins = Math.floor(secondsDiff / (60));
     secondsDiff -= mins * 60;
     diffText += leadingSpace;
@@ -79,7 +67,6 @@ function generateTimeDiffText(dateSeconds) {
 }
 
 export {
-  toFormattedDate,
   hoursMinsToSecondsFromNow,
   hoursMinsToDate,
   hoursMinsToISOString,

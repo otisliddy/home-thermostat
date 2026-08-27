@@ -42,14 +42,19 @@ const DeviceCard = ({
   const getNextScheduled = () => {
     if (!scheduledActivity || scheduledActivity.length === 0) return null;
 
+    const toMs = (seconds) => (seconds > 10000000000 ? seconds : seconds * 1000);
+    const nowMs = Date.now();
+
+    // Scheduled activity also carries activity that is already running, which is shown as the
+    // current status rather than as the next one.
     const deviceScheduled = scheduledActivity
-      .filter(activity => activity.device === device)
+      .filter(activity => activity.device === device && toMs(activity.since) > nowMs)
       .sort((a, b) => a.since - b.since);
 
     if (deviceScheduled.length === 0) return null;
 
     const next = deviceScheduled[0];
-    const sinceMs = next.since > 10000000000 ? next.since : next.since * 1000;
+    const sinceMs = toMs(next.since);
     const date = new Date(sinceMs);
     const today = new Date();
 

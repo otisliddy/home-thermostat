@@ -54,6 +54,10 @@
   color: #333;
 }
 
+.temp-value.stale {
+  color: #f44336;
+}
+
 .dhw-temp.clickable {
   cursor: pointer;
   padding: 4px 8px;

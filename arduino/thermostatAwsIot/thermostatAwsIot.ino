@@ -84,6 +84,11 @@ void loop() {
 }
 
 void mqttLoop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connection lost, reconnecting");
+    setUpWiFi();
+  }
+
   if (!mqttClient.connected()) {
     connectToAwsIot();
   }
@@ -124,11 +129,10 @@ void mqttLoop() {
 }
 
 void connectToAwsIot() {
+  // MQTT allows a single last will per connection, so setting a second one only replaces the
+  // first. It goes on the main topic because that is the shadow the UI reads 'connected' from.
   String willPayload = "{\"state\":{\"reported\":{\"connected\":false}}}";
   mqttClient.beginWill(MAIN_TOPIC_UPDATE, willPayload.length(), false, 1);
-  mqttClient.print(willPayload);
-  mqttClient.endWill();
-  mqttClient.beginWill(IMMERSION_TOPIC_UPDATE, willPayload.length(), false, 1);
   mqttClient.print(willPayload);
   mqttClient.endWill();
 
@@ -179,5 +183,8 @@ void publishMessage(const char* topic, const char* message) {
   Serial.println(String("Publishing to '") + topic + "' message: " + message);
   mqttClient.beginMessage(topic);
   mqttClient.print(message);
-  mqttClient.endMessage();
+  if (!mqttClient.endMessage()) {
+    Serial.println("Publish failed, disconnecting so the next loop reconnects");
+    mqttClient.stop();
+  }
 }

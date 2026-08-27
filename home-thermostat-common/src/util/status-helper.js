@@ -71,7 +71,7 @@ statusHelper.dynamoItemToStatus = (dynamoItem) => {
     for (const key in dynamoItem) {
         if (dynamoItem.hasOwnProperty(key) && key !== 'expireAt') {
             if (dynamoItem[key].N) {
-                status[key] = parseInt(dynamoItem[key]['N']);
+                status[key] = Number(dynamoItem[key]['N']);
             } else if (dynamoItem[key].BOOL !== undefined) {
                 status[key] = dynamoItem[key]['BOOL'];
             } else {
@@ -80,6 +80,26 @@ statusHelper.dynamoItemToStatus = (dynamoItem) => {
         }
     }
     return status;
+}
+
+/**
+ * Find the status that follows the one at the given index, for the same device.
+ * Statuses are expected in reverse chronological order (newest first), so the
+ * following status sits at a lower index. Statuses of other devices are skipped,
+ * otherwise a status would be cut short by unrelated activity on another device.
+ *
+ * @param {Array} statuses - Statuses, newest first, possibly for several devices
+ * @param {number} index - Index of the status to find the successor of
+ * @returns {Object|null} The next status for the same device, or null if it is the most recent
+ */
+statusHelper.findNextStatusForDevice = (statuses, index) => {
+    const status = statuses[index];
+    for (let i = index - 1; i >= 0; i--) {
+        if (statuses[i].device === status.device) {
+            return statuses[i];
+        }
+    }
+    return null;
 }
 
 /**
@@ -95,9 +115,10 @@ statusHelper.dynamoItemToStatus = (dynamoItem) => {
 statusHelper.getActualEndTime = (status, nextStatus, currentTime = Date.now()) => {
     const currentTimeSeconds = Math.floor(currentTime / 1000);
 
-    // Priority 1: Use next status's start time (handles early turn-off)
+    // Priority 1: Use next status's start time (handles early turn-off), but never
+    // run past 'until'; the next status can be much later if no 'off' was recorded.
     if (nextStatus) {
-        return nextStatus.since;
+        return status.until ? Math.min(nextStatus.since, status.until) : nextStatus.since;
     }
 
     // Priority 2: Use until field only if there's no next status

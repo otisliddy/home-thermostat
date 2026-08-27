@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { statusHelper } from 'home-thermostat-common';
 import './dhw-graph-modal.css';
 
+const GRAPH_HOURS = 6;
+const GRAPH_WINDOW_MS = GRAPH_HOURS * 60 * 60 * 1000;
+
 const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, statuses }) => {
   const [temperatureData, setTemperatureData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +18,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
   const fetchTemperatureData = async () => {
     setLoading(true);
     try {
-      const startMsAgo = Date.now() - (6 * 60 * 60 * 1000);
+      const startMsAgo = Date.now() - GRAPH_WINDOW_MS;
 
       // Query temperature table for ht-dhw-temp device
       const params = {
@@ -97,7 +100,9 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
       .join(' ');
 
     // Generate heating markers
-    const fourHoursAgo = Date.now() - (4 * 60 * 60 * 1000);
+    // Must match the window the temperatures were fetched over, otherwise heating is shaded
+    // over only part of the plotted line.
+    const graphStartMs = Date.now() - GRAPH_WINDOW_MS;
     const heatingPeriods = [];
 
     if (statuses && statuses.length > 0) {
@@ -108,15 +113,15 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         const sinceMs = status.since > 10000000000 ? status.since : status.since * 1000;
 
         // Use helper to calculate actual end time
-        const nextStatus = i > 0 ? statuses[i - 1] : null;
+        const nextStatus = statusHelper.findNextStatusForDevice(statuses, i);
         const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, Date.now());
         const untilMs = untilSeconds > 10000000000 ? untilSeconds : untilSeconds * 1000;
 
-        // Only show if within 4 hour window
-        if (untilMs > fourHoursAgo && sinceMs < Date.now()) {
+        // Only show if within the graph's window
+        if (untilMs > graphStartMs && sinceMs < Date.now()) {
           heatingPeriods.push({
             device: status.device,
-            start: Math.max(sinceMs, fourHoursAgo),
+            start: Math.max(sinceMs, graphStartMs),
             end: Math.min(untilMs, Date.now())
           });
         }
@@ -270,7 +275,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
     <div className="dhw-graph-modal-overlay" onClick={onClose}>
       <div className="dhw-graph-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="dhw-graph-header">
-          <h2>DHW Temperature (Last 4 Hours)</h2>
+          <h2>DHW Temperature (Last {GRAPH_HOURS} Hours)</h2>
           <button className="close-button" onClick={onClose}>✕</button>
         </div>
         <div className="dhw-graph-body">

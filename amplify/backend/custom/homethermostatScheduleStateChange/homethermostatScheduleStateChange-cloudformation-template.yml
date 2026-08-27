@@ -63,7 +63,7 @@ Resources:
             Parameters:
               executionArn.$: $$.Execution.Id
               thingName.$: $.thingName
-              mode: ON
+              mode: 'ON'
               recurring.$: $.recurring
               startTime.$: $.startTime
               durationSeconds.$: $.durationSeconds
@@ -80,7 +80,7 @@ Resources:
             Parameters:
               executionArn.$: $$.Execution.Id
               thingName.$: $.thingName
-              mode: OFF
+              mode: 'OFF'
               recurring.$: $.recurring
               startTime.$: $.startTime
             ResultPath: $.turnOffResult

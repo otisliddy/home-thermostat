@@ -12,10 +12,17 @@ const Header = ({ connected, outsideTemp, dhwTemperature, onDhwClick }) => {
 
     const tempDisplay = `DHW: ${dhwTemperature.temperature.toFixed(1)}°C`;
 
-    // If data is stale (older than 10 minutes), show it differently
+    // If data is stale (older than 10 minutes), show when it was read. The day is part of it,
+    // otherwise a reading from days ago is indistinguishable from one taken this morning.
     if (dhwTemperature.isStale) {
       const date = new Date(dhwTemperature.timestamp);
-      return `${tempDisplay} (${date.toLocaleTimeString()})`;
+      const reading = date.toLocaleString([], {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      return `${tempDisplay} (${reading})`;
     }
 
     return tempDisplay;
@@ -40,7 +47,7 @@ const Header = ({ connected, outsideTemp, dhwTemperature, onDhwClick }) => {
         tabIndex={0}
         onKeyPress={(e) => e.key === 'Enter' && onDhwClick()}
       >
-        <span className="temp-value">{formatDhwDisplay()}</span>
+        <span className={`temp-value ${dhwTemperature?.isStale ? 'stale' : ''}`}>{formatDhwDisplay()}</span>
         <svg
           className="expand-icon"
           width="16"
