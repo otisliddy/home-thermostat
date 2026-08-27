@@ -18,6 +18,12 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['src/**/*.test.{js,jsx}'],
+    // One runner for the whole repo. The lambda and shared-library suites are CommonJS and use
+    // chai; vitest runs them as-is, so they did not have to be rewritten to be brought in here.
+    include: [
+      'src/**/*.test.{js,jsx}',
+      'home-thermostat-common/test/**/*.test.js',
+      'amplify/function/**/*.test.js',
+    ],
   },
 });

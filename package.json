@@ -19,7 +19,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run && mocha \"home-thermostat-common/test/*.test.js\"",
+    "test": "vitest run",
     "lint": "eslint ."
   },
   "devDependencies": {
@@ -40,7 +40,6 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.5",
     "globals": "^17.11.0",
-    "mocha": "^11.8.0",
     "sinon": "^22.1.0",
     "tsx": "^4.20.6",
     "vite": "^8.2.2",

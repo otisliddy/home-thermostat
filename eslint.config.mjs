@@ -34,6 +34,6 @@ export default [
   },
   {
     files: ['home-thermostat-common/**/*.js'],
-    languageOptions: { globals: { ...globals.node, ...globals.mocha }, sourceType: 'commonjs' },
+    languageOptions: { globals: { ...globals.node, ...globals.vitest }, sourceType: 'commonjs' },
   },
 ];

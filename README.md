@@ -31,9 +31,13 @@ Hosting the backend build phase writes it before the frontend phase runs.
 
 # Home Thermostat Common
 
-After making changes to home-thermostat-common src, ./home-thermostat-common/build.sh must be run to copy the files to
-the lambdas that depend on them. It installs the runtime dependencies and copies index.js, package.json, src and
-node_modules; the tests and the lock file are deliberately not deployed.
+The lambdas depend on it as an ordinary npm dependency (`home-thermostat-common: file:./home-thermostat-common`), so a
+change to its src reaches them with no copy step. Amplify Gen 2 bundles each lambda with esbuild, which follows that
+link and inlines only the modules the handler actually reaches.
+
+Under Gen 1 this was not possible and a build.sh copied the library into each lambda directory. Those vendored copies
+and the script are gone; if you see a `require('./home-thermostat-common')` anywhere it is a leftover and should be the
+bare package name.
 
 Its test tooling lives in the root package.json, because npm does not apply the root's dependency overrides to a
 file:-linked package's own dependencies.
@@ -56,9 +60,13 @@ The front end is built with [Vite](https://vite.dev). A few things follow from t
 - The Vite and ESLint configs are vite.config.mjs and eslint.config.mjs. They are .mjs rather than .js because the
   package itself is CommonJS.
 
-Front end tests sit next to the code they cover as `src/**/*.test.js(x)` and run under
-[Vitest](https://vitest.dev). The home-thermostat-common tests are in home-thermostat-common/test and run under
-[Mocha](https://mochajs.org).
+Everything runs under [Vitest](https://vitest.dev), from one `npm test`. Tests sit next to the code they cover:
+`src/**/*.test.js(x)` for the front end, `amplify/function/*/index.test.js` for the lambda handlers and
+home-thermostat-common/test for the shared library.
+
+The lambda handlers are CommonJS and construct their AWS clients at module load, so `vi.mock` cannot reach them --- it
+rewrites ESM imports, not `require`. The suites spy on the client prototypes instead (`vi.spyOn(DynamoDBClient.prototype,
+'send')`), which both module systems share. The shared-library suite still uses chai assertions; Vitest runs it as is.
 
 ## Available Scripts
 
@@ -71,7 +79,7 @@ module replacement. `npm run dev` does the same thing.
 
 ### `npm test`
 
-Runs the Vitest and Mocha suites, once each.
+Runs every suite once.
 
 ### `npm run build`
 
