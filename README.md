@@ -20,8 +20,14 @@ The front end is a React app under ./src.
 ```
 nvm use
 npm install
+npx ampx generate outputs --app-id d36tefta7j8ppr --branch master
 npm start
 ```
+
+`amplify_outputs.json` is gitignored and holds the backend resource names the app reads at build time,
+so it must exist before `npm start` or `npm run build`. Generate it from the deployed branch as above,
+or let `npx ampx sandbox` write it to point the app at your own sandbox stack instead. In Amplify
+Hosting the backend build phase writes it before the frontend phase runs.
 
 # Home Thermostat Common
 
