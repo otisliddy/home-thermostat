@@ -2,6 +2,7 @@ import { defineFunction } from '@aws-amplify/backend';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import type { Backend } from '../../backend';
 
 const branchName = process.env.AWS_BRANCH ?? 'sandbox';
@@ -44,6 +45,15 @@ export function applyEscapeHatches(
   backend.homethermostatProcessTemperatureStream.addEnvironment(
     'STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME',
     homethermostatscheduledactivity.tableName
+  );
+  // Dropped by the same migration. Without it a temperature run turns on but its task token is
+  // never resolved, so the heating never turns back off. The token names its own execution, so the
+  // resource cannot be narrowed to one state machine.
+  backend.homethermostatProcessTemperatureStream.resources.lambda.addToRolePolicy(
+    new PolicyStatement({
+      actions: ['states:SendTaskSuccess'],
+      resources: ['*'],
+    })
   );
   homethermostatscheduledactivity.grant(
     backend.homethermostatProcessTemperatureStream.resources.lambda,
@@ -96,4 +106,8 @@ export function applyEscapeHatches(
   homethermostattemperature.grantTableListStreams(
     backend.homethermostatProcessTemperatureStream.resources.lambda.role!
   );
+}
+
+export function setRelayDevices(backend: Backend, devices: string[]) {
+  backend.homethermostatProcessTemperatureStream.addEnvironment('RELAY_DEVICES', devices.join(','));
 }

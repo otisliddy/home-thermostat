@@ -36,7 +36,6 @@ export function defineStorageHomethermostatDeviceState(backend: Backend) {
   return table;
 }
 
-export function postRefactor(homethermostat_device_state: Table) {
-  (homethermostat_device_state.node.defaultChild as CfnTable).tableName =
-    'homethermostat-device-state-dev';
+export function postRefactor(homethermostat_device_state: Table, suffix: string) {
+  (homethermostat_device_state.node.defaultChild as CfnTable).tableName = `homethermostat-device-state-${suffix}`;
 }

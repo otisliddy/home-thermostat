@@ -1,16 +1,14 @@
 const { QueryCommand, PutItemCommand, DeleteItemCommand } = require('@aws-sdk/client-dynamodb');
 const statusHelper = require('../util/status-helper');
-const stateTableName = 'homethermostat-device-state-dev';
-const scheduleTableName = 'homethermostat-scheduled-activity-dev';
 
 class DynamodbClient {
     constructor(dynamodb) {
         this.dynamodb = dynamodb;
     }
 
-    async getStatuses(thingName, since) {
+    async getStatuses(tableName, thingName, since) {
         const params = {
-            TableName: stateTableName,
+            TableName: tableName,
             KeyConditionExpression: 'device = :device and since > :since',
             ExpressionAttributeValues: {
                 ':device': { S: `${thingName}` },
@@ -31,11 +29,11 @@ class DynamodbClient {
     * Includes in-progress activity as well as upcoming, an 'until' only being written once
     * the activity completes.
     */
-    async getScheduledActivity(thingName) {
+    async getScheduledActivity(tableName, thingName) {
         const nowSeconds = Math.floor(new Date().getTime() / 1000);
         const oneDayAgoSeconds = nowSeconds - 24 * 60 * 60;
         const params = {
-            TableName: scheduleTableName,
+            TableName: tableName,
             KeyConditionExpression: 'device = :device AND since > :since',
             ExpressionAttributeValues: {
                 ':device': {S: thingName},

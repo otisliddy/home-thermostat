@@ -38,7 +38,6 @@ export function defineStorageHomethermostatTemperature(backend: Backend) {
   return table;
 }
 
-export function postRefactor(homethermostat_temperature: Table) {
-  (homethermostat_temperature.node.defaultChild as CfnTable).tableName =
-    'homethermostat-temperature-dev';
+export function postRefactor(homethermostat_temperature: Table, suffix: string) {
+  (homethermostat_temperature.node.defaultChild as CfnTable).tableName = `homethermostat-temperature-${suffix}`;
 }

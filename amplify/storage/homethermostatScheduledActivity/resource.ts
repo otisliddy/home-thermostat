@@ -36,7 +36,6 @@ export function defineStorageHomethermostatScheduledActivity(backend: Backend) {
   return table;
 }
 
-export function postRefactor(homethermostat_scheduled_activity: Table) {
-  (homethermostat_scheduled_activity.node.defaultChild as CfnTable).tableName =
-    'homethermostat-scheduled-activity-dev';
+export function postRefactor(homethermostat_scheduled_activity: Table, suffix: string) {
+  (homethermostat_scheduled_activity.node.defaultChild as CfnTable).tableName = `homethermostat-scheduled-activity-${suffix}`;
 }

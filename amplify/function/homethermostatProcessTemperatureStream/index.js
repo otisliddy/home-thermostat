@@ -92,8 +92,7 @@ export const handler = async (event) => {
 
 /**
  * Get all active temperature tasks from the scheduled-activity table.
- * Since we need to check across all heating devices (ht-main, ht-immersion, etc.),
- * we query each known device and filter in-memory for:
+ * Since we need to check across all heating devices, we query each and filter in-memory for:
  * - since value within last 24 hours
  * - until is null
  * - taskToken is not null
@@ -101,7 +100,7 @@ export const handler = async (event) => {
  */
 async function getAllActiveTemperatureTasks() {
     const twentyFourHoursAgo = Math.floor(Date.now() / 1000) - (24 * 60 * 60);
-    const devices = ['ht-main', 'ht-immersion'];
+    const devices = (process.env.RELAY_DEVICES || 'ht-main,ht-immersion').split(',');
     const activeTasks = [];
 
     for (const device of devices) {
