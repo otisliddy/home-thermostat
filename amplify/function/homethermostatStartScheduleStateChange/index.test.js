@@ -6,6 +6,8 @@ import { SFNClient } from '@aws-sdk/client-sfn';
 // than the modules mocked.
 const TABLE = 'homethermostat-scheduled-activity-test';
 const STATE_MACHINE_ARN = 'arn:aws:states:eu-west-1:000000000000:stateMachine:schedule-test';
+const TEMPERATURE_STATE_MACHINE_ARN =
+  'arn:aws:states:eu-west-1:000000000000:stateMachine:temperature-test';
 const EXECUTION_ARN = 'arn:aws:states:eu-west-1:000000000000:execution:schedule-test:abc';
 
 let dynamoSend;
@@ -20,6 +22,7 @@ beforeEach(async () => {
   vi.stubEnv('REGION', 'eu-west-1');
   vi.stubEnv('STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME', TABLE);
   vi.stubEnv('SCHEDULE_STATE_MACHINE_ARN', STATE_MACHINE_ARN);
+  vi.stubEnv('TEMPERATURE_STATE_MACHINE_ARN', TEMPERATURE_STATE_MACHINE_ARN);
   handler = (await import('./index.js')).handler;
 });
 
@@ -114,6 +117,18 @@ describe('homethermostatStartScheduleStateChange', () => {
     expect(result).toBe(EXECUTION_ARN);
   });
 
+  it('returns the execution and the activity key for an initial run', async () => {
+    const result = await handler({
+      thingName: 'ht-main',
+      startTime: 0,
+      durationSeconds: 900,
+      isInitialInvocation: true,
+    });
+
+    expect(result.executionArn).toBe(EXECUTION_ARN);
+    expect(result.since).toBeCloseTo(Math.floor(Date.now() / 1000), -1);
+  });
+
   it('rejects a startTime it cannot interpret', async () => {
     await expect(handler({ thingName: 'ht-main', startTime: 12345 })).rejects.toThrow(
       'Invalid startTime format'
@@ -128,5 +143,87 @@ describe('homethermostatStartScheduleStateChange', () => {
       handler({ thingName: 'ht-main', startTime: inOneHour(), durationSeconds: 900 })
     ).rejects.toThrow('states unavailable');
     expect(dynamoSend).not.toHaveBeenCalled();
+  });
+});
+
+describe('temperature runs', () => {
+  const temperatureInput = () => JSON.parse(sfnSend.mock.calls[0][0].input.input);
+
+  it('starts the temperature machine rather than the schedule machine', async () => {
+    await handler({ thingName: 'ht-main', startTime: 0, dhwTargetTemperature: 45 });
+
+    expect(sfnSend.mock.calls[0][0].input.stateMachineArn).toBe(TEMPERATURE_STATE_MACHINE_ARN);
+  });
+
+  it('passes the target and the activity key to the machine', async () => {
+    await handler({ thingName: 'ht-main', startTime: 0, dhwTargetTemperature: 45 });
+
+    const input = temperatureInput();
+    expect(input).toMatchObject({
+      thingName: 'ht-main',
+      startWaitSeconds: 0,
+      dhwTargetTemperature: 45,
+      recurring: false,
+    });
+    expect(input.since).toBeCloseTo(Math.floor(Date.now() / 1000), -1);
+  });
+
+  it('records the activity even when the run starts immediately', async () => {
+    await handler({ thingName: 'ht-main', startTime: 0, dhwTargetTemperature: 45 });
+
+    expect(dynamoSend).toHaveBeenCalledOnce();
+    const { input } = dynamoSend.mock.calls[0][0];
+    expect(input.TableName).toBe(TABLE);
+    expect(input.Item.device.S).toBe('ht-main');
+    expect(input.Item.dhwTargetTemperature.N).toBe('45');
+  });
+
+  // An 'until' up front reads as already finished.
+  it('records no until, because the run ends when the water gets there', async () => {
+    await handler({ thingName: 'ht-main', startTime: 0, dhwTargetTemperature: 45 });
+
+    expect(dynamoSend.mock.calls[0][0].input.Item.until).toBeUndefined();
+  });
+
+  it('keys the activity row on the same second it hands the machine', async () => {
+    await handler({ thingName: 'ht-main', startTime: inOneHour(), dhwTargetTemperature: 45 });
+
+    expect(Number(dynamoSend.mock.calls[0][0].input.Item.since.N)).toBe(temperatureInput().since);
+  });
+
+  it('waits until the requested time for a future temperature run', async () => {
+    await handler({ thingName: 'ht-main', startTime: inOneHour(), dhwTargetTemperature: 45 });
+
+    expect(temperatureInput().startWaitSeconds).toBeCloseTo(3600, -2);
+  });
+
+  it('moves a recurring temperature run on by a day when it re-runs', async () => {
+    await handler({
+      thingName: 'ht-main',
+      startTime: inOneHour(),
+      dhwTargetTemperature: 45,
+      recurring: true,
+    });
+
+    const dayInSeconds = 24 * 60 * 60;
+    expect(temperatureInput().startWaitSeconds).toBeCloseTo(3600 + dayInSeconds, -2);
+  });
+
+  it('carries the target through to the next occurrence', async () => {
+    await handler({
+      thingName: 'ht-main',
+      startTime: inOneHour(),
+      dhwTargetTemperature: 45,
+      recurring: true,
+    });
+
+    expect(temperatureInput().dhwTargetTemperature).toBe(45);
+  });
+
+  it('treats a duration request with no target as a timed run', async () => {
+    await handler({ thingName: 'ht-main', startTime: 0, durationSeconds: 900 });
+
+    expect(sfnSend.mock.calls[0][0].input.stateMachineArn).toBe(STATE_MACHINE_ARN);
+    expect(temperatureInput().dhwTargetTemperature).toBeUndefined();
   });
 });

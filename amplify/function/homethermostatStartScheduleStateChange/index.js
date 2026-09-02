@@ -12,66 +12,52 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 const stepFunctionsClient = new StepFunctionsClient(new SFNClient({ region: process.env.REGION }));
 const dynamodbClient = new DynamodbClient(new DynamoDBClient({ region: process.env.REGION }));
 const scheduleTableName = process.env.STORAGE_HOMETHERMOSTATSCHEDULEDACTIVITY_NAME;
-// Gen 2 names the state machine per branch, so the ARN is injected rather than hardcoded.
-const stateMachineArn = process.env.SCHEDULE_STATE_MACHINE_ARN;
+// Gen 2 names the state machines per branch, so the ARNs are injected rather than hardcoded.
+const scheduleStateMachineArn = process.env.SCHEDULE_STATE_MACHINE_ARN;
+const temperatureStateMachineArn = process.env.TEMPERATURE_STATE_MACHINE_ARN;
 
-export const handler = async (event, context) => {
+export const handler = async (event) => {
   console.log('Event: ', event);
 
-  // Extract parameters - for initial invocation they come from App.js
-  // or for recurring invocations they come from Step Functions RescheduleRecurring state
   const thingName = event.thingName;
   const recurring = event.recurring || false;
-  let startTime = event.startTime;
   const durationSeconds = event.durationSeconds;
+  const dhwTargetTemperature = event.dhwTargetTemperature;
   const isInitialInvocation = event.isInitialInvocation;
   const isRecurring = recurring && !isInitialInvocation;
 
-  let startWaitSeconds;
+  const { startTime, startWaitSeconds } = resolveStart(event.startTime, isRecurring);
 
-  if (startTime === 0 || startTime === '0') {
-    // Immediate execution
-    startWaitSeconds = 0;
-    startTime = new Date(); // Now
-  } else if (typeof startTime === 'string') {
-    startTime = new Date(startTime);
+  const runsToTemperature = dhwTargetTemperature !== undefined && dhwTargetTemperature !== null;
 
-    // For recurring tasks, increment by one day
-    if (isRecurring) {
-      startTime.setTime(startTime.getTime() + 24 * 60 * 60 * 1000);
-    }
+  // Must match the 'since' createStatus derives below: the machine keys its closing update on it.
+  const since = Math.round(startTime.getTime() / 1000);
 
-    startWaitSeconds = calculateSecondsUntilTimestamp(startTime);
-  } else {
-    console.error('Invalid startTime format:', startTime);
-    throw new Error('Invalid startTime format');
-  }
+  const stateMachineArn = runsToTemperature ? temperatureStateMachineArn : scheduleStateMachineArn;
+  const stateMachineInput = runsToTemperature
+    ? { thingName, startWaitSeconds, dhwTargetTemperature, recurring, startTime, since }
+    : { thingName, startWaitSeconds, durationSeconds, recurring, startTime };
 
-  const stateMachineInput = {
-    thingName: thingName,
-    startWaitSeconds: startWaitSeconds,
-    durationSeconds: durationSeconds,
-    recurring: recurring,
-    startTime: startTime
-  };
-
-  console.log('Starting state machine with input:', stateMachineInput);
+  console.log('Starting state machine', stateMachineArn, 'with input:', stateMachineInput);
 
   try {
     const executionArn = await stepFunctionsClient.startNewExecution(stateMachineArn, stateMachineInput);
     console.log('Successfully started execution:', executionArn);
 
-    const options = {
-      duration: durationSeconds,
-      executionArn: executionArn,
-      recurring: recurring
-    };
+    const options = { executionArn, recurring };
+    if (durationSeconds) {
+      options.duration = durationSeconds;
+    }
+    if (runsToTemperature) {
+      options.dhwTargetTemperature = dhwTargetTemperature;
+    }
 
     const status = statusHelper.createStatus(thingName, modes.ON.val, options, startTime);
 
-    console.log('Inserting scheduled activity:', status);
-
-    if (startWaitSeconds !== 0) {
+    // A temperature run always needs a row: it is the only record of the target. An immediate
+    // timed run does not, because changeState writes the device state itself.
+    if (runsToTemperature || startWaitSeconds !== 0) {
+      console.log('Inserting scheduled activity:', status);
       await dynamodbClient.insertStatus(scheduleTableName, status);
       console.log('Successfully inserted scheduled activity');
     }
@@ -79,11 +65,33 @@ export const handler = async (event, context) => {
     if (isRecurring) {
       return executionArn;
     }
+
+    return { executionArn, since };
   } catch (error) {
     console.error('Error starting execution or inserting status:', error);
     throw error;
   }
 };
+
+// A recurring run moves on a day: the time it carries is the one just served.
+function resolveStart(rawStartTime, isRecurring) {
+  if (rawStartTime === 0 || rawStartTime === '0') {
+    return { startTime: new Date(), startWaitSeconds: 0 };
+  }
+
+  if (typeof rawStartTime === 'string' || rawStartTime instanceof Date) {
+    const startTime = new Date(rawStartTime);
+
+    if (isRecurring) {
+      startTime.setTime(startTime.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    return { startTime, startWaitSeconds: calculateSecondsUntilTimestamp(startTime) };
+  }
+
+  console.error('Invalid startTime format:', rawStartTime);
+  throw new Error('Invalid startTime format');
+}
 
 function calculateSecondsUntilTimestamp(targetTime) {
   const now = new Date();

@@ -93,6 +93,38 @@ describe('homethermostatChangeState', () => {
     expect(result.until).toBeCloseTo(Math.floor(Date.now() / 1000), -1);
   });
 
+  it('records why the run ended when turning off', async () => {
+    await handler({
+      thingName: 'ht-main',
+      mode: 'OFF',
+      end: { endReason: 'target_temperature_reached', endTemperature: 45.2 },
+    });
+
+    const { Item } = dynamoSend.mock.calls[0][0].input;
+    expect(Item.endReason.S).toBe('target_temperature_reached');
+    expect(Item.endTemperature.N).toBe('45.2');
+  });
+
+  it('records a reason with no temperature when the run timed out', async () => {
+    await handler({ thingName: 'ht-main', mode: 'OFF', end: { endReason: 'timed_out' } });
+
+    const { Item } = dynamoSend.mock.calls[0][0].input;
+    expect(Item.endReason.S).toBe('timed_out');
+    expect(Item.endTemperature).toBeUndefined();
+  });
+
+  it('ignores an end reason handed to it when turning on', async () => {
+    await handler({ thingName: 'ht-main', mode: 'ON', end: { endReason: 'timed_out' } });
+
+    expect(dynamoSend.mock.calls[0][0].input.Item.endReason).toBeUndefined();
+  });
+
+  it('records no reason when the state machine supplies none', async () => {
+    await handler({ thingName: 'ht-main', mode: 'OFF' });
+
+    expect(dynamoSend.mock.calls[0][0].input.Item.endReason).toBeUndefined();
+  });
+
   // The shadow update is what actually moves the relay. If it fails, recording an ON status
   // would leave the UI claiming the heating is on when it is not.
   it('does not record a status when the shadow update fails', async () => {

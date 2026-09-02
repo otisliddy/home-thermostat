@@ -1,6 +1,7 @@
 const expect = require('chai').expect;
 const statusHelper = require('../src/util/status-helper');
 const { modes } = require('../src/constants/modes');
+const { endReasons } = require('../src/constants/end-reasons');
 
 it('should create a status from off mode', function () {
     const status = statusHelper.createStatus('device-name', modes.OFF.val);
@@ -107,5 +108,41 @@ describe('isScheduledActivityRunning', () => {
         const activity = { since: now - 600 };
         const statuses = [{ mode: modes.OFF.val, since: now - 900 }];
         expect(statusHelper.isScheduledActivityRunning(activity, statuses, nowMillis)).to.equal(true);
+    });
+});
+
+describe('describeRunEnd', function () {
+
+    it('no status describes nothing', function () {
+        expect(statusHelper.describeRunEnd(null)).to.equal(null);
+    });
+
+    it('a status with no reason describes nothing', function () {
+        expect(statusHelper.describeRunEnd({ mode: modes.OFF.val, since: 1000 })).to.equal(null);
+    });
+
+    it('reports the temperature a target-reached run got to', function () {
+        const ended = { endReason: endReasons.TARGET_REACHED, endTemperature: 45.23 };
+
+        expect(statusHelper.describeRunEnd(ended)).to.equal('reached target at 45.2\u00b0C');
+    });
+
+    it('reports a timeout without a temperature', function () {
+        expect(statusHelper.describeRunEnd({ endReason: endReasons.TIMED_OUT })).to.equal('timed out');
+    });
+
+    it('reports a run that served its full duration', function () {
+        expect(statusHelper.describeRunEnd({ endReason: endReasons.DURATION_ELAPSED }))
+            .to.equal('ran its duration');
+    });
+
+    it('reports a run someone turned off', function () {
+        expect(statusHelper.describeRunEnd({ endReason: endReasons.STOPPED_MANUALLY }))
+            .to.equal('stopped manually');
+    });
+
+    it('falls back to the raw reason when it has no label', function () {
+        expect(statusHelper.describeRunEnd({ endReason: 'element_thermostat_cutout' }))
+            .to.equal('element_thermostat_cutout');
     });
 });

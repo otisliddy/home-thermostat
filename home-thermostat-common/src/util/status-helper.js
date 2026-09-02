@@ -1,4 +1,5 @@
 const { modes } = require('../constants/modes');
+const { endReasonLabels } = require('../constants/end-reasons');
 
 const statusHelper = {};
 
@@ -25,6 +26,14 @@ statusHelper.createStatus = (thingName, mode, options, since = new Date()) => {
 
     if (options && options.dhwTargetTemperature !== undefined) {
         status.dhwTargetTemperature = options.dhwTargetTemperature;
+    }
+
+    if (options && options.endReason) {
+        status.endReason = options.endReason;
+    }
+
+    if (options && options.endTemperature !== undefined && options.endTemperature !== null) {
+        status.endTemperature = options.endTemperature;
     }
 
     return status;
@@ -144,6 +153,21 @@ statusHelper.isScheduledActivityRunning = (activity, deviceStatuses = [], curren
     }
 
     return !deviceStatuses.some((status) => status.mode === modes.OFF.val && status.since >= activity.since);
+}
+
+// Takes the Off status that closed the run, not the On status that started it.
+statusHelper.describeRunEnd = (endingStatus) => {
+    if (!endingStatus || !endingStatus.endReason) {
+        return null;
+    }
+
+    const label = endReasonLabels[endingStatus.endReason] || endingStatus.endReason;
+
+    if (endingStatus.endTemperature === undefined || endingStatus.endTemperature === null) {
+        return label;
+    }
+
+    return `${label} at ${Number(endingStatus.endTemperature).toFixed(1)}°C`;
 }
 
 module.exports = statusHelper;

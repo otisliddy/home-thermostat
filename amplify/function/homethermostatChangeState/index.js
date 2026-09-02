@@ -28,6 +28,7 @@ export const handler = async (event, context) => {
     const startTime = event.startTime;
     const durationSeconds = event.durationSeconds;
     const executionArn = event.executionArn;
+    const end = event.end;
 
     // Update the thing shadow
     const params = {
@@ -38,15 +39,15 @@ export const handler = async (event, context) => {
 
     try {
         await iotDataClient.send(new UpdateThingShadowCommand(params));
-        return await handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn);
+        return await handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn, end);
     } catch (err) {
         console.log(err, err.stack);
         throw err;
     }
 }
 
-async function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn) {
-    const statusOptions = buildStatusOptions(mode, durationSeconds, executionArn);
+async function handleSuccessfulResponse(event, thingName, mode, recurring, startTime, durationSeconds, executionArn, end) {
+    const statusOptions = buildStatusOptions(mode, durationSeconds, executionArn, end);
 
     // Convert mode string to modes constant value
     const modeValue = mode === 'ON' ? modes.ON.val : modes.OFF.val;
@@ -66,7 +67,7 @@ async function handleSuccessfulResponse(event, thingName, mode, recurring, start
     }
 }
 
-function buildStatusOptions(mode, durationSeconds, executionArn) {
+function buildStatusOptions(mode, durationSeconds, executionArn, end) {
     const statusOptions = {};
 
     // Only add duration if we're turning ON and have a duration
@@ -76,6 +77,15 @@ function buildStatusOptions(mode, durationSeconds, executionArn) {
 
     if (executionArn) {
         statusOptions.executionArn = executionArn;
+    }
+
+    if (mode === 'OFF' && end) {
+        if (end.endReason) {
+            statusOptions.endReason = end.endReason;
+        }
+        if (end.endTemperature !== undefined && end.endTemperature !== null) {
+            statusOptions.endTemperature = end.endTemperature;
+        }
     }
 
     return statusOptions;

@@ -72,6 +72,9 @@ export function defineStateMachines(backend: Backend, scheduledActivityTable: Ta
           "TurnOff": {
               "Next": "CheckIfRecurring",
               "Parameters": {
+                  "end": {
+                      "endReason": "duration_elapsed"
+                  },
                   "executionArn.$": "$$.Execution.Id",
                   "mode": "OFF",
                   "recurring.$": "$.recurring",
@@ -109,21 +112,16 @@ export function defineStateMachines(backend: Backend, scheduledActivityTable: Ta
       }
   };
 
+  // TurnOff's ResultPath "$" replaces the state with changeState's echoed input, so anything the
+  // later states read must be listed in its Parameters or it is lost.
   const TEMPERATURE_DEFINITION = {
       "Comment": "State machine for controlling heating until target temperature is reached",
-      "StartAt": "TurnOn",
+      "StartAt": "WaitBeforeTurnOn",
       "States": {
-          "TurnOff": {
-              "Next": "UpdateScheduledActivityUntil",
-              "Parameters": {
-                  "executionArn.$": "$$.Execution.Id",
-                  "mode": "OFF",
-                  "since.$": "$.since",
-                  "thingName.$": "$.thingName"
-              },
-              "Resource": changeStateArn,
-              "ResultPath": "$",
-              "Type": "Task"
+          "WaitBeforeTurnOn": {
+              "Next": "TurnOn",
+              "SecondsPath": "$.startWaitSeconds",
+              "Type": "Wait"
           },
           "TurnOn": {
               "Next": "WaitForTargetTemperature",
@@ -136,42 +134,17 @@ export function defineStateMachines(backend: Backend, scheduledActivityTable: Ta
               "ResultPath": "$.turnOnResult",
               "Type": "Task"
           },
-          "UpdateScheduledActivityUntil": {
-              "End": true,
-              "Parameters": {
-                  "ExpressionAttributeNames": {
-                      "#until": "until"
-                  },
-                  "ExpressionAttributeValues": {
-                      ":until": {
-                          "N.$": "States.Format('{}', $.until)"
-                      }
-                  },
-                  "Key": {
-                      "device": {
-                          "S.$": "$.thingName"
-                      },
-                      "since": {
-                          "N.$": "States.Format('{}', $.since)"
-                      }
-                  },
-                  "TableName": scheduledActivityTableName,
-                  "UpdateExpression": "SET #until = :until"
-              },
-              "Resource": "arn:aws:states:::dynamodb:updateItem",
-              "Type": "Task"
-          },
           "WaitForTargetTemperature": {
               "Catch": [
                   {
                       "ErrorEquals": [
                           "States.Timeout"
                       ],
-                      "Next": "TurnOff",
+                      "Next": "RecordTimeout",
                       "ResultPath": "$.timeoutError"
                   }
               ],
-              "Next": "TurnOff",
+              "Next": "RecordTargetReached",
               "Parameters": {
                   "FunctionName": storeTaskTokenArn,
                   "Payload": {
@@ -185,6 +158,95 @@ export function defineStateMachines(backend: Backend, scheduledActivityTable: Ta
               "ResultPath": "$.waitResult",
               "TimeoutSeconds": 3600,
               "Type": "Task"
+          },
+          "RecordTargetReached": {
+              "Next": "TurnOff",
+              "Parameters": {
+                  "endReason.$": "$.waitResult.reason",
+                  "endTemperature.$": "$.waitResult.temperature"
+              },
+              "ResultPath": "$.end",
+              "Type": "Pass"
+          },
+          "RecordTimeout": {
+              "Next": "TurnOff",
+              "Result": {
+                  "endReason": "timed_out"
+              },
+              "ResultPath": "$.end",
+              "Type": "Pass"
+          },
+          "TurnOff": {
+              "Next": "UpdateScheduledActivityUntil",
+              "Parameters": {
+                  "dhwTargetTemperature.$": "$.dhwTargetTemperature",
+                  "end.$": "$.end",
+                  "executionArn.$": "$$.Execution.Id",
+                  "mode": "OFF",
+                  "recurring.$": "$.recurring",
+                  "since.$": "$.since",
+                  "startTime.$": "$.startTime",
+                  "thingName.$": "$.thingName"
+              },
+              "Resource": changeStateArn,
+              "ResultPath": "$",
+              "Type": "Task"
+          },
+          "UpdateScheduledActivityUntil": {
+              "Next": "CheckIfRecurring",
+              "Parameters": {
+                  "ExpressionAttributeNames": {
+                      "#endReason": "endReason",
+                      "#until": "until"
+                  },
+                  "ExpressionAttributeValues": {
+                      ":endReason": {
+                          "S.$": "$.end.endReason"
+                      },
+                      ":until": {
+                          "N.$": "States.Format('{}', $.until)"
+                      }
+                  },
+                  "Key": {
+                      "device": {
+                          "S.$": "$.thingName"
+                      },
+                      "since": {
+                          "N.$": "States.Format('{}', $.since)"
+                      }
+                  },
+                  "TableName": scheduledActivityTableName,
+                  "UpdateExpression": "SET #until = :until, #endReason = :endReason"
+              },
+              "Resource": "arn:aws:states:::dynamodb:updateItem",
+              "ResultPath": "$.updateResult",
+              "Type": "Task"
+          },
+          "CheckIfRecurring": {
+              "Choices": [
+                  {
+                      "BooleanEquals": true,
+                      "Next": "RescheduleRecurring",
+                      "Variable": "$.recurring"
+                  }
+              ],
+              "Default": "Done",
+              "Type": "Choice"
+          },
+          "RescheduleRecurring": {
+              "End": true,
+              "Parameters": {
+                  "dhwTargetTemperature.$": "$.dhwTargetTemperature",
+                  "recurring.$": "$.recurring",
+                  "startTime.$": "$.startTime",
+                  "thingName.$": "$.thingName"
+              },
+              "Resource": startScheduleArn,
+              "Type": "Task"
+          },
+          "Done": {
+              "End": true,
+              "Type": "Pass"
           }
       }
   };
@@ -204,23 +266,34 @@ export function defineStateMachines(backend: Backend, scheduledActivityTable: Ta
   // Built from the name rather than read off the resource. Referencing scheduleHeatingChange.ref
   // here would make the function stack depend on this one, which already depends on the function
   // stack for the ARNs above, and CloudFormation rejects the cycle.
-  const scheduleStateMachineArn = Arn.format(
-    {
-      service: 'states',
-      resource: 'stateMachine',
-      resourceName: `schedule-heating-change-${branchName}`,
-      arnFormat: ArnFormat.COLON_RESOURCE_NAME,
-    },
-    Stack.of(backend.homethermostatStartScheduleStateChange.resources.lambda)
+  const stateMachineArnByName = (name: string) =>
+    Arn.format(
+      {
+        service: 'states',
+        resource: 'stateMachine',
+        resourceName: name,
+        arnFormat: ArnFormat.COLON_RESOURCE_NAME,
+      },
+      Stack.of(backend.homethermostatStartScheduleStateChange.resources.lambda)
+    );
+
+  const scheduleStateMachineArn = stateMachineArnByName(`schedule-heating-change-${branchName}`);
+  const temperatureStateMachineArn = stateMachineArnByName(
+    `temperature-heating-change-${branchName}`
   );
+
   backend.homethermostatStartScheduleStateChange.addEnvironment(
     'SCHEDULE_STATE_MACHINE_ARN',
     scheduleStateMachineArn
   );
+  backend.homethermostatStartScheduleStateChange.addEnvironment(
+    'TEMPERATURE_STATE_MACHINE_ARN',
+    temperatureStateMachineArn
+  );
   backend.homethermostatStartScheduleStateChange.resources.lambda.addToRolePolicy(
     new PolicyStatement({
       actions: ['states:StartExecution', 'states:StopExecution'],
-      resources: [scheduleStateMachineArn],
+      resources: [scheduleStateMachineArn, temperatureStateMachineArn],
     })
   );
 
