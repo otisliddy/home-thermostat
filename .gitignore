@@ -31,3 +31,5 @@ amplify_outputs*
 amplifyconfiguration*
 aws-exports*
 dist
+
+.playwright-mcp/
