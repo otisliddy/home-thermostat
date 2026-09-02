@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import './device-card.css';
 
+const toMs = (seconds) => (seconds > 10000000000 ? seconds : seconds * 1000);
+
 const DeviceCard = ({
   device,
   deviceName,
@@ -38,11 +40,25 @@ const DeviceCard = ({
     return mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
   };
 
+  // A DHW run's target sits on the scheduled activity, not on the device status: the temperature
+  // state machine records it when the run starts and the shadow only ever reports on/off.
+  // App has already dropped activities whose execution died, so anything started is still running.
+  const getDhwTarget = () => {
+    if (!isCurrentlyOn || !scheduledActivity) return null;
+
+    const nowMs = Date.now();
+    const running = scheduledActivity.find(activity =>
+      activity.device === device &&
+      activity.dhwTargetTemperature !== undefined &&
+      toMs(activity.since) <= nowMs);
+
+    return running ? running.dhwTargetTemperature : null;
+  };
+
   // Get next scheduled activity for this device
   const getNextScheduled = () => {
     if (!scheduledActivity || scheduledActivity.length === 0) return null;
 
-    const toMs = (seconds) => (seconds > 10000000000 ? seconds : seconds * 1000);
     const nowMs = Date.now();
 
     const deviceScheduled = scheduledActivity
@@ -92,6 +108,7 @@ const DeviceCard = ({
 
   const nextScheduled = getNextScheduled();
   const timeRemaining = getTimeRemaining();
+  const dhwTarget = getDhwTarget();
 
   return (
     <div className={`device-card ${isCurrentlyOn ? 'active' : ''}`}>
@@ -104,7 +121,9 @@ const DeviceCard = ({
             ) : isCurrentlyOn ? (
               <>
                 <span className="status-indicator on"></span>
-                <span className="status-text on">ON</span>
+                <span className="status-text on">
+                  {dhwTarget !== null ? `On to ${dhwTarget.toFixed(1)}°C` : 'ON'}
+                </span>
                 {timeRemaining && <span className="time-remaining">• {timeRemaining}</span>}
               </>
             ) : (
