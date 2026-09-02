@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { statusHelper } from 'home-thermostat-common';
 import './timeline-chart.css';
+import {deviceLabel, isOil} from '../config/devices';
 
-const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), onDeleteScheduled }) => {
+const TimelineChart = ({
+  statuses,
+  scheduledActivity,
+  currentTime = Date.now(),
+  onDeleteScheduled,
+  onStopCurrent
+}) => {
   const [tooltip, setTooltip] = useState(null);
   const scrollContainerRef = useRef(null);
 
@@ -73,6 +80,8 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
       const untilSeconds = statusHelper.getActualEndTime(status, nextStatus, currentTime);
       const until = untilSeconds > 10000000000 ? untilSeconds : untilSeconds * 1000;
 
+      const isRunning = !nextStatus && (!status.until || until > currentTime);
+
       // Only show if visible in timeline
       if (until > startTime && since < endTime) {
         processedHistory.push({
@@ -82,7 +91,8 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
           mode: status.mode,
           originalStart: since,
           originalEnd: until,
-          type: 'historical'
+          endedBy: statusHelper.describeRunEnd(nextStatus),
+          type: isRunning ? 'current' : 'historical'
         });
       }
     }
@@ -107,7 +117,6 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
       const isCurrentlyRunning = !activity.until && since <= currentTime;
 
       if (isDhwActivity && isCurrentlyRunning) {
-        // Show running DHW activities as historical (not deletable)
         if (since < endTime) {
           processedHistory.push({
             device: activity.device,
@@ -117,7 +126,7 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
             originalStart: since,
             originalEnd: currentTime,
             dhwTargetTemperature: activity.dhwTargetTemperature,
-            type: 'historical'
+            type: 'current'
           });
         }
       } else if (until > currentTime && since < endTime) {
@@ -158,11 +167,11 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
   const currentPercent = timeToPercent(currentTime);
 
   const getDeviceColor = (device) => {
-    return device === 'ht-main' ? '#ff9800' : '#2196f3'; // Orange for oil, blue for immersion
+    return isOil(device) ? '#ff9800' : '#2196f3'; // Orange for oil, blue for immersion
   };
 
   const getDeviceName = (device) => {
-    return device === 'ht-main' ? 'Oil' : 'Immersion';
+    return deviceLabel(device);
   };
 
   const handleBarClick = (activity, event) => {
@@ -218,7 +227,7 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
           return (
             <div
               key={`hist-${idx}`}
-              className="timeline-bar historical"
+              className={`timeline-bar ${activity.type === 'current' ? 'current' : 'historical'}`}
               style={{
                 left: `${left}%`,
                 width: `${width}%`,
@@ -286,7 +295,29 @@ const TimelineChart = ({ statuses, scheduledActivity, currentTime = Date.now(), 
               Target: {tooltip.dhwTargetTemperature}°C
             </div>
           )}
-          <div className="tooltip-type">{tooltip.type === 'scheduled' ? 'Scheduled' : 'Historical'}</div>
+          {tooltip.endedBy && (
+            <div className="tooltip-row">
+              Ended: {tooltip.endedBy}
+            </div>
+          )}
+          <div className="tooltip-type">
+            {tooltip.type === 'scheduled' ? 'Scheduled' : tooltip.type === 'current' ? 'Running now' : 'Historical'}
+          </div>
+          {tooltip.type === 'current' && onStopCurrent && (
+            <button
+              className="tooltip-delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onStopCurrent(tooltip.device);
+                setTooltip(null);
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/>
+              </svg>
+              Stop now
+            </button>
+          )}
           {tooltip.type === 'scheduled' && onDeleteScheduled && (
             <button
               className="tooltip-delete-btn"

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { QueryCommand } from '@aws-sdk/client-dynamodb';
 import { statusHelper } from 'home-thermostat-common';
 import './dhw-graph-modal.css';
+import { DHW_TEMP, isOil } from '../config/devices';
 
 const GRAPH_HOURS = 6;
 const GRAPH_WINDOW_MS = GRAPH_HOURS * 60 * 60 * 1000;
@@ -21,7 +22,6 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
     try {
       const startMsAgo = Date.now() - GRAPH_WINDOW_MS;
 
-      // Query temperature table for ht-dhw-temp device
       const params = {
         TableName: temperatureTableName,
         KeyConditionExpression: 'device = :device AND #ts > :since',
@@ -29,7 +29,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
           '#ts': 'timestamp'
         },
         ExpressionAttributeValues: {
-          ':device': { S: 'ht-dhw-temp' },
+          ':device': { S: DHW_TEMP },
           ':since': { N: startMsAgo.toString() }
         },
         ScanIndexForward: true // Oldest first
@@ -152,7 +152,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         {heatingPeriods.map((period, idx) => {
           const x1 = scaleX(period.start);
           const x2 = scaleX(period.end);
-          const color = period.device === 'ht-main' ? 'rgba(255, 152, 0, 0.1)' : 'rgba(33, 150, 243, 0.1)';
+          const color = isOil(period.device) ? 'rgba(255, 152, 0, 0.1)' : 'rgba(33, 150, 243, 0.1)';
 
           return (
             <rect

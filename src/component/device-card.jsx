@@ -12,6 +12,7 @@ const DeviceCard = ({
   onTurnOnToDHW,
   onSchedule,
   onTurnOff,
+  onExtend,
   onViewStats
 }) => {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
@@ -22,11 +23,31 @@ const DeviceCard = ({
   const isCurrentlyOn = status?.device === device && status?.mode === 'On';
   const isLoading = status?.mode === 'Loading...';
 
+  // The target lives on the scheduled activity, not the device status: the shadow only reports on/off.
+  const getCurrentRun = () => {
+    if (!isCurrentlyOn) return null;
+
+    const nowMs = Date.now();
+    // A timed activity carries an 'until' and a temperature one does not, so both have to match
+    // or a recurring timed run looks non-recurring and +15m would cancel its future occurrences.
+    const activity = (scheduledActivity || []).find(candidate =>
+      candidate.device === device &&
+      toMs(candidate.since) <= nowMs &&
+      (!candidate.until || toMs(candidate.until) > nowMs));
+
+    return {
+      since: status.since,
+      until: status.until,
+      dhwTargetTemperature: activity?.dhwTargetTemperature,
+      recurring: activity?.recurring
+    };
+  };
+
   // Calculate time remaining for current status
   const getTimeRemaining = () => {
     if (!isCurrentlyOn || !status.until) return null;
 
-    const untilMs = status.until > 10000000000 ? status.until : status.until * 1000;
+    const untilMs = toMs(status.until);
     const now = Date.now();
     const remainingMs = untilMs - now;
 
@@ -38,21 +59,6 @@ const DeviceCard = ({
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
-  };
-
-  // A DHW run's target sits on the scheduled activity, not on the device status: the temperature
-  // state machine records it when the run starts and the shadow only ever reports on/off.
-  // App has already dropped activities whose execution died, so anything started is still running.
-  const getDhwTarget = () => {
-    if (!isCurrentlyOn || !scheduledActivity) return null;
-
-    const nowMs = Date.now();
-    const running = scheduledActivity.find(activity =>
-      activity.device === device &&
-      activity.dhwTargetTemperature !== undefined &&
-      toMs(activity.since) <= nowMs);
-
-    return running ? running.dhwTargetTemperature : null;
   };
 
   // Get next scheduled activity for this device
@@ -82,7 +88,11 @@ const DeviceCard = ({
 
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    return `${dateStr} ${timeStr}`;
+    const endsWith = next.dhwTargetTemperature !== undefined
+      ? ` to ${Number(next.dhwTargetTemperature).toFixed(1)}°C`
+      : '';
+
+    return `${dateStr} ${timeStr}${endsWith}`;
   };
 
   const handleTurnOnClick = () => {
@@ -108,7 +118,14 @@ const DeviceCard = ({
 
   const nextScheduled = getNextScheduled();
   const timeRemaining = getTimeRemaining();
-  const dhwTarget = getDhwTarget();
+  const currentRun = getCurrentRun();
+  const dhwTarget = currentRun?.dhwTargetTemperature ?? null;
+  // Extending restarts the run, which would drop a recurring schedule's future occurrences.
+  const canExtend = Boolean(currentRun?.until) && !currentRun?.recurring && Boolean(onExtend);
+
+  const startedAt = currentRun
+    ? new Date(toMs(currentRun.since)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
 
   return (
     <div className={`device-card ${isCurrentlyOn ? 'active' : ''}`}>
@@ -122,7 +139,7 @@ const DeviceCard = ({
               <>
                 <span className="status-indicator on"></span>
                 <span className="status-text on">
-                  {dhwTarget !== null ? `On to ${dhwTarget.toFixed(1)}°C` : 'ON'}
+                  {dhwTarget !== null ? `On to ${Number(dhwTarget).toFixed(1)}°C` : 'ON'}
                 </span>
                 {timeRemaining && <span className="time-remaining">• {timeRemaining}</span>}
               </>
@@ -148,6 +165,29 @@ const DeviceCard = ({
           )}
         </div>
       </div>
+
+      {currentRun && (
+        <div className="current-run">
+          <span className="current-run-badge">Now</span>
+          <span className="current-run-detail">
+            Since {startedAt}
+            {dhwTarget !== null
+              ? ` · until ${Number(dhwTarget).toFixed(1)}°C`
+              : timeRemaining ? ` · ${timeRemaining}` : ''}
+            {currentRun.recurring && ' · repeats daily'}
+          </span>
+          {canExtend && (
+            <button
+              className="extend-btn"
+              onClick={() => onExtend(15 * 60)}
+              disabled={isLoading}
+              title="Add 15 minutes to this run"
+            >
+              +15m
+            </button>
+          )}
+        </div>
+      )}
 
       {nextScheduled && (
         <div className="next-scheduled">

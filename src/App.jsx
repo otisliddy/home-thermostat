@@ -1,12 +1,12 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {InvokeCommand, LambdaClient} from '@aws-sdk/client-lambda';
 import {DynamoDBClient} from '@aws-sdk/client-dynamodb';
 import {GetThingShadowCommand, IoTDataPlaneClient, UpdateThingShadowCommand} from '@aws-sdk/client-iot-data-plane';
-import {DynamodbClient, modes, statusHelper, StepFunctionsClient} from 'home-thermostat-common';
+import {DynamodbClient, endReasons, modes, statusHelper, StepFunctionsClient} from 'home-thermostat-common';
 import {Amplify} from 'aws-amplify';
 import {Hub} from 'aws-amplify/utils';
 import {Authenticator} from '@aws-amplify/ui-react';
-import {fetchAuthSession} from 'aws-amplify/auth';
+import {fetchAuthSession, signUp} from 'aws-amplify/auth';
 import {SFNClient} from '@aws-sdk/client-sfn';
 
 // Components
@@ -20,6 +20,8 @@ import ScheduleModal from './component/schedule-modal';
 import './App.css';
 import '@aws-amplify/ui-react/styles.css';
 import {hoursMinsToISOString} from "./util/time-helper";
+import {subscribeToShadowUpdates} from './util/shadow-updates';
+import {DHW_TEMP, IMMERSION, OIL, RELAY_DEVICES, isOil} from './config/devices';
 import amplifyOutputs from '../amplify_outputs.json';
 
 const identityPoolId = 'eu-west-1:a2b980af-483f-41fb-ab4a-fcfef938015a';
@@ -40,7 +42,6 @@ Amplify.configure({
 // the frontend build.
 const {
   startScheduleStateChangeFunctionArn: startScheduleStateChangeLambdaArn,
-  temperatureStateMachineArn: temperatureStateChangeStateMachineArn,
   deviceStateTableName: stateTableName,
   scheduledActivityTableName: scheduleTableName,
   temperatureTableName,
@@ -57,6 +58,9 @@ const App = () => {
   const [showDhwGraph, setShowDhwGraph] = useState(false);
   const [outsideTemp, setOutsideTemp] = useState(null);
   const [selectedStatsDevice, setSelectedStatsDevice] = useState(null);
+  const [signUpPending, setSignUpPending] = useState(false);
+  const [credentialsReady, setCredentialsReady] = useState(false);
+  const refreshTimerRef = useRef(null);
 
   // Device-specific statuses
   const [oilStatus, setOilStatus] = useState({mode: 'Loading...'});
@@ -67,6 +71,7 @@ const App = () => {
       // Amplify v6 renamed this event from 'signIn'. Under the old name the app only picked up
       // credentials on a page reload, never straight after signing in.
       if ('signedIn' === data.payload.event) {
+        setSignUpPending(false);
         await setUserAndSyncStatus();
       }
     });
@@ -120,18 +125,65 @@ const App = () => {
         credentials: awsCredentials
       });
 
+      setCredentialsReady(true);
       await syncAllStatuses();
     } catch (error) {
       console.log(error);
     }
   }
 
+  const setterFor = (device) => (isOil(device) ? setOilStatus : setImmersionStatus);
+
+  const queueRefresh = useCallback((delayMs = 750) => {
+    clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      Promise.all([
+        fetchDhwTemperature(),
+        fetchTimelineAndScheduledActivity(),
+        fetchHistoricalStatuses()
+      ]).catch((error) => console.error('Error refreshing after shadow update:', error));
+    }, delayMs);
+  }, []);
+
+  /*
+   * Any accepted update means something moved, so re-read either way: a desired-only one is this
+   * app's own instruction reaching IoT before the state machine has written the status row. Only
+   * the device reporting back is trusted to set the mode.
+   */
+  const applyShadowUpdate = useCallback((device, {reported}) => {
+    if (reported?.on !== undefined) {
+      setterFor(device)((current) => ({...current, device, mode: reported.on ? modes.ON.val : modes.OFF.val}));
+    }
+
+    if (isOil(device) && reported?.connected !== undefined) {
+      setConnected(reported.connected);
+    }
+
+    queueRefresh();
+  }, [queueRefresh]);
+
+  // Picks up changes nobody in this browser made: a state machine ending a run, or the hardware.
+  useEffect(() => {
+    if (!credentialsReady) return;
+
+    const unsubscribe = subscribeToShadowUpdates(
+      RELAY_DEVICES,
+      applyShadowUpdate,
+      (device, error) => console.error(`Shadow subscription failed for ${device}:`, error)
+    );
+
+    return () => {
+      clearTimeout(refreshTimerRef.current);
+      unsubscribe();
+    };
+  }, [credentialsReady, applyShadowUpdate]);
+
   async function syncAllStatuses() {
     // The shadow reports only on/off, so it is read before the DynamoDB statuses that
     // overwrite it with 'until' and 'executionArn'; run together, the shadow can win the race.
     await Promise.all([
-      syncDeviceStatus('ht-main', setOilStatus),
-      syncDeviceStatus('ht-immersion', setImmersionStatus)
+      syncDeviceStatus(OIL, setOilStatus),
+      syncDeviceStatus(IMMERSION, setImmersionStatus)
     ]);
 
     await Promise.all([
@@ -141,22 +193,33 @@ const App = () => {
     ]);
   }
 
+  /*
+   * A thing that has never been connected to has no shadow, and one whose device has never
+   * reported has no reported section, so neither can be relied on. What was last asked for is the
+   * best available answer in that case, and the device counts as disconnected either way.
+   */
   async function syncDeviceStatus(device, setDeviceStatus) {
     try {
       const command = new GetThingShadowCommand({thingName: device, shadowName: device + '_shadow'});
       const data = await iotData.send(command);
-      const payloadString = new TextDecoder().decode(data.payload);
-      const jsonResponse = JSON.parse(payloadString);
-      const reportedMode = jsonResponse.state.reported.on ? modes.ON : modes.OFF;
-      const connected = jsonResponse.state.reported.connected;
+      const state = JSON.parse(new TextDecoder().decode(data.payload)).state ?? {};
+      const reported = state.reported ?? {};
+      const isOn = reported.on ?? state.desired?.on ?? false;
 
-      if (device === 'ht-main') {
-        setConnected(connected);
+      if (isOil(device)) {
+        setConnected(reported.connected ?? false);
       }
 
-      // Initial status from IoT Shadow
-      setDeviceStatus({mode: reportedMode.val, device: device});
+      setDeviceStatus({mode: isOn ? modes.ON.val : modes.OFF.val, device: device});
     } catch (error) {
+      if (error.name === 'ResourceNotFoundException') {
+        if (isOil(device)) {
+          setConnected(false);
+        }
+        setDeviceStatus({mode: modes.OFF.val, device: device});
+        return;
+      }
+
       console.error(`Error syncing status for ${device}:`, error);
       setDeviceStatus({mode: 'Error', device: device});
     }
@@ -164,7 +227,7 @@ const App = () => {
 
   async function fetchDhwTemperature() {
     try {
-      const tempData = await dynamodbClient.getLatestTemperature(temperatureTableName, 'ht-dhw-temp');
+      const tempData = await dynamodbClient.getLatestTemperature(temperatureTableName, DHW_TEMP);
       if (tempData) {
         const now = Date.now();
         const tempAge = now - tempData.timestamp;
@@ -187,10 +250,10 @@ const App = () => {
       const oneDayAgo = Math.floor((Date.now() - (24 * 60 * 60 * 1000)) / 1000);
 
       const [oilStatuses, immersionStatuses, oilScheduled, immersionScheduled] = await Promise.all([
-        dynamodbClient.getStatuses('ht-main', oneDayAgo),
-        dynamodbClient.getStatuses('ht-immersion', oneDayAgo),
-        dynamodbClient.getScheduledActivity('ht-main'),
-        dynamodbClient.getScheduledActivity('ht-immersion')
+        dynamodbClient.getStatuses(stateTableName, OIL, oneDayAgo),
+        dynamodbClient.getStatuses(stateTableName, IMMERSION, oneDayAgo),
+        dynamodbClient.getScheduledActivity(scheduleTableName, OIL),
+        dynamodbClient.getScheduledActivity(scheduleTableName, IMMERSION)
       ]);
 
       // Update device statuses with most recent
@@ -222,8 +285,8 @@ const App = () => {
       const ninetyDaysAgo = Math.floor((Date.now() - (90 * 24 * 60 * 60 * 1000)) / 1000);
 
       const [oilStatuses, immersionStatuses] = await Promise.all([
-        dynamodbClient.getStatuses('ht-main', ninetyDaysAgo),
-        dynamodbClient.getStatuses('ht-immersion', ninetyDaysAgo)
+        dynamodbClient.getStatuses(stateTableName, OIL, ninetyDaysAgo),
+        dynamodbClient.getStatuses(stateTableName, IMMERSION, ninetyDaysAgo)
       ]);
 
       // Combine and sort all statuses
@@ -234,73 +297,75 @@ const App = () => {
     }
   }
 
+  // Every run goes through the scheduler lambda, which picks the state machine to drive it.
+  async function startRun(device, {startTime = '0', durationSeconds, dhwTargetTemperature, recurring = false}) {
+    const params = {
+      FunctionName: startScheduleStateChangeLambdaArn,
+      Payload: JSON.stringify({
+        thingName: device,
+        startTime,
+        durationSeconds,
+        dhwTargetTemperature,
+        recurring,
+        isInitialInvocation: true
+      })
+    };
+
+    const data = await lambda.send(new InvokeCommand(params));
+
+    if (data.FunctionError) {
+      throw new Error(new TextDecoder().decode(data.Payload));
+    }
+
+    await Promise.all([
+      fetchTimelineAndScheduledActivity(),
+      fetchHistoricalStatuses()
+    ]);
+    queueRefresh(1500);
+  }
+
+  function reportRunFailure(error, message) {
+    console.error(message, error);
+    if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
+      alert('Forbidden, you must be an authorized user.');
+    } else {
+      alert(message);
+    }
+  }
+
   // Handler for "On for time" action
   async function handleTurnOn(device, durationSeconds) {
     try {
-      const params = {
-        FunctionName: startScheduleStateChangeLambdaArn,
-        Payload: JSON.stringify({
-          thingName: device,
-          startTime: '0',
-          durationSeconds: durationSeconds,
-          recurring: false,
-          isInitialInvocation: true
-        })
-      };
-
-      const command = new InvokeCommand(params);
-      const data = await lambda.send(command);
-
-      if (data.Payload) {
-        const responseText = new TextDecoder().decode(data.Payload);
-        console.log('Lambda response:', responseText);
-      }
-
-      setTimeout(async () => {await Promise.all([
-          fetchTimelineAndScheduledActivity(),
-          fetchHistoricalStatuses()
-        ]);
-      }, 1000);
+      await startRun(device, {durationSeconds});
     } catch (error) {
-      console.error('Error turning on:', error);
-      if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
-        alert('Forbidden, you must be an authorized user.');
-      } else {
-        alert('Error turning on heating.');
-      }
+      reportRunFailure(error, 'Error turning on heating.');
     }
   }
 
   // Handler for "On to DHW" action
   async function handleTurnOnToDHW(device, targetTemp) {
     try {
-      const since = Math.floor(Date.now() / 1000);
-
-      const executionArn = await stepFunctionsClient.startNewExecution(temperatureStateChangeStateMachineArn, {
-        thingName: device,
-        dhwTargetTemperature: targetTemp,
-        since: since
-      });
-
-      console.log('Started temperature state machine:', executionArn);
-
-      // The state machine keys the scheduled activity item on this same 'since'.
-      const status = statusHelper.createStatus(device, modes.ON.val, {
-        executionArn: executionArn,
-        dhwTargetTemperature: targetTemp
-      }, new Date(since * 1000));
-
-      await dynamodbClient.insertStatus(scheduleTableName, status);
-      console.log('Successfully inserted temperature schedule status');
-
-      setTimeout(async () => {await Promise.all([
-        fetchTimelineAndScheduledActivity(),
-        fetchHistoricalStatuses()
-      ]);
-      }, 1500);
+      await startRun(device, {dhwTargetTemperature: targetTemp});
     } catch (error) {
-      console.error('Error starting temperature schedule:', error);
-      alert('Error starting temperature schedule');
+      reportRunFailure(error, 'Error starting temperature run.');
+    }
+  }
+
+  // Restarting is the only way to lengthen a run: a Wait already counting down cannot be changed.
+  async function handleExtend(device, extraSeconds) {
+    try {
+      const deviceStatus = isOil(device) ? oilStatus : immersionStatus;
+      if (!deviceStatus.until) return;
+
+      const remainingSeconds = Math.max(0, deviceStatus.until - Math.floor(Date.now() / 1000));
+
+      if (deviceStatus.executionArn) {
+        await cancelExecution(deviceStatus.executionArn);
+      }
+
+      await startRun(device, {durationSeconds: remainingSeconds + extraSeconds});
+    } catch (error) {
+      reportRunFailure(error, 'Error extending heating.');
     }
   }
 
@@ -314,7 +379,7 @@ const App = () => {
   async function handleTurnOff(device) {
     try {
       // Get the current status for this device
-      const deviceStatus = device === 'ht-main' ? oilStatus : immersionStatus;
+      const deviceStatus = isOil(device) ? oilStatus : immersionStatus;
 
       // Also check scheduled activity for this device (includes DHW activities)
       const currentActivity = scheduledActivity.find(
@@ -347,8 +412,9 @@ const App = () => {
 
       await iotData.send(new UpdateThingShadowCommand(params));
 
-      // Create OFF status
-      const status = statusHelper.createStatus(device, modes.OFF.val, {});
+      const status = statusHelper.createStatus(device, modes.OFF.val, {
+        endReason: endReasons.STOPPED_MANUALLY
+      });
       await dynamodbClient.insertStatus(stateTableName, status);
 
       await Promise.all([
@@ -366,32 +432,17 @@ const App = () => {
   }
 
   // Handler for Schedule modal confirm
-  async function handleScheduleConfirm(startTime, durationSeconds, recurring) {
+  async function handleScheduleConfirm({startTime, durationSeconds, dhwTargetTemperature, recurring}) {
     try {
-      const startTimeISO = hoursMinsToISOString(startTime);
-      const params = {
-        FunctionName: startScheduleStateChangeLambdaArn,
-        Payload: JSON.stringify({
-          thingName: selectedDevice,
-          startTime: startTimeISO,
-          durationSeconds: durationSeconds,
-          recurring: recurring,
-          isInitialInvocation: true
-        })
-      };
-
-      const command = new InvokeCommand(params);
-      await lambda.send(command);
-
+      await startRun(selectedDevice, {
+        startTime: hoursMinsToISOString(startTime),
+        durationSeconds,
+        dhwTargetTemperature,
+        recurring
+      });
       setScheduleModalShow(false);
-      await fetchTimelineAndScheduledActivity();
     } catch (error) {
-      console.error('Error scheduling:', error);
-      if (error.statusCode === 403 || error.$metadata?.httpStatusCode === 403) {
-        alert('Forbidden, you must be an authorized user.');
-      } else {
-        alert('Error scheduling heating.');
-      }
+      reportRunFailure(error, 'Error scheduling heating.');
     }
   }
 
@@ -429,19 +480,25 @@ const App = () => {
     }
   }
 
-  const authComponents = {
-    ConfirmSignUp: {
-      Header() {
-        return (
-          <label>Your signup request has been sent to Otis for approval.</label>
-        );
-      }
+  // Accounts are approved by hand and Cognito sends no code, so the confirm-code step it would
+  // otherwise land on can never be completed. Report sign-up done and send them back to sign-in.
+  const authServices = {
+    async handleSignUp(input) {
+      const result = await signUp(input);
+      setSignUpPending(true);
+      return {...result, isSignUpComplete: false, nextStep: {signUpStep: 'DONE'}};
     }
   };
 
   return (
     <div id="root">
-      <Authenticator components={authComponents}/>
+      {signUpPending && (
+        <div className="signup-pending" role="status">
+          Your request has been sent to Otis for approval. You will be able to sign in once your
+          account is approved.
+        </div>
+      )}
+      <Authenticator services={authServices}/>
       <div id="homethermostat">
         {/* Header */}
         <Header
@@ -457,45 +514,48 @@ const App = () => {
           scheduledActivity={scheduledActivity}
           currentTime={Date.now()}
           onDeleteScheduled={handleDeleteScheduled}
+          onStopCurrent={handleTurnOff}
         />
 
         {/* Device Cards */}
         <DeviceCard
-          device="ht-main"
+          device={OIL}
           deviceName="Oil"
           status={oilStatus}
           scheduledActivity={scheduledActivity}
-          onTurnOn={(duration) => handleTurnOn('ht-main', duration)}
-          onTurnOnToDHW={(temp) => handleTurnOnToDHW('ht-main', temp)}
-          onSchedule={() => handleSchedule('ht-main')}
-          onTurnOff={() => handleTurnOff('ht-main')}
-          onViewStats={() => handleViewStats('ht-main')}
+          onTurnOn={(duration) => handleTurnOn(OIL, duration)}
+          onTurnOnToDHW={(temp) => handleTurnOnToDHW(OIL, temp)}
+          onSchedule={() => handleSchedule(OIL)}
+          onTurnOff={() => handleTurnOff(OIL)}
+          onExtend={(extraSeconds) => handleExtend(OIL, extraSeconds)}
+          onViewStats={() => handleViewStats(OIL)}
         />
 
-        {selectedStatsDevice === 'ht-main' && (
+        {selectedStatsDevice === OIL && (
           <HistoryStats
             statuses={statuses}
-            device="ht-main"
+            device={OIL}
             deviceName="Oil"
           />
         )}
 
         <DeviceCard
-          device="ht-immersion"
+          device={IMMERSION}
           deviceName="Immersion"
           status={immersionStatus}
           scheduledActivity={scheduledActivity}
-          onTurnOn={(duration) => handleTurnOn('ht-immersion', duration)}
-          onTurnOnToDHW={(temp) => handleTurnOnToDHW('ht-immersion', temp)}
-          onSchedule={() => handleSchedule('ht-immersion')}
-          onTurnOff={() => handleTurnOff('ht-immersion')}
-          onViewStats={() => handleViewStats('ht-immersion')}
+          onTurnOn={(duration) => handleTurnOn(IMMERSION, duration)}
+          onTurnOnToDHW={(temp) => handleTurnOnToDHW(IMMERSION, temp)}
+          onSchedule={() => handleSchedule(IMMERSION)}
+          onTurnOff={() => handleTurnOff(IMMERSION)}
+          onExtend={(extraSeconds) => handleExtend(IMMERSION, extraSeconds)}
+          onViewStats={() => handleViewStats(IMMERSION)}
         />
 
-        {selectedStatsDevice === 'ht-immersion' && (
+        {selectedStatsDevice === IMMERSION && (
           <HistoryStats
             statuses={statuses}
-            device="ht-immersion"
+            device={IMMERSION}
             deviceName="Immersion"
           />
         )}

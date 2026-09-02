@@ -91,3 +91,15 @@ a:focus-visible {
     display: none !important;
   }
 }
+
+.signup-pending {
+  max-width: 460px;
+  margin: 16px auto 0;
+  padding: 12px 16px;
+  border: 1px solid #a5d6a7;
+  border-radius: 8px;
+  background: #e8f5e9;
+  color: #2e5b31;
+  font-size: 14px;
+  text-align: center;
+}

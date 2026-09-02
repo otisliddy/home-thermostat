@@ -275,3 +275,14 @@
     padding: 6px 10px;
   }
 }
+
+.timeline-bar.current {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.35) 0,
+    rgba(255, 255, 255, 0.35) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.9);
+}

@@ -387,3 +387,51 @@
     display: inline !important;
   }
 }
+
+.current-run {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: #e8f5e9;
+  font-size: 13px;
+  color: #2e5b31;
+}
+
+.current-run-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #4caf50;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.current-run-detail {
+  flex: 1;
+}
+
+.extend-btn {
+  padding: 4px 10px;
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  background: #fff;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.extend-btn:hover:not(:disabled) {
+  background: #4caf50;
+  color: #fff;
+}
+
+.extend-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
