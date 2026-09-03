@@ -39,6 +39,12 @@
   color: #333;
 }
 
+.dhw-graph-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #888;
+}
+
 .close-button {
   background: none;
   border: none;
@@ -66,9 +72,29 @@
   flex: 1;
 }
 
+/* The axis is a fixed gutter so its labels stay put while the plot beside it pans. */
+.graph-layout {
+  display: flex;
+  align-items: flex-start;
+}
+
+.graph-y-axis {
+  flex: 0 0 auto;
+}
+
+.graph-scroller {
+  flex: 1 1 auto;
+  /* Width comes from HOURS_VISIBLE so the visible window has one source of truth. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+
 .temperature-graph {
-  width: 100%;
-  height: auto;
+  display: block;
+  cursor: crosshair;
+  touch-action: pan-x;
 }
 
 .graph-loading,
@@ -76,7 +102,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 300px;
+  height: 560px;
   color: #999;
   font-size: 16px;
 }
@@ -108,5 +134,9 @@
 
   .temperature-graph {
     font-size: 10px;
+  }
+
+  .dhw-graph-hint {
+    font-size: 11px;
   }
 }
