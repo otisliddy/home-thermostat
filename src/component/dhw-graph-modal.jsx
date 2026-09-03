@@ -18,6 +18,9 @@ const PADDING_BOTTOM = 40;
 const SVG_HEIGHT = PLOT_HEIGHT + PADDING_TOP + PADDING_BOTTOM;
 const AXIS_WIDTH = 52;
 
+// How far from the line a finger still counts as being on it.
+const TOUCH_GRAB_PX = 44;
+
 const Y_MIN = 0;
 const Y_MAX = 55;
 const Y_TICK_STEP = 5;
@@ -38,7 +41,8 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
   const [domain, setDomain] = useState({ start: 0, end: 0 });
   const [hovered, setHovered] = useState(null);
   const scrollerRef = useRef(null);
-  const touchHoldRef = useRef(null);
+  const svgRef = useRef(null);
+  const gestureRef = useRef({ kind: 'none' });
 
   const fetchTemperatureData = useCallback(async () => {
     setLoading(true);
@@ -91,55 +95,107 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
     }
   }, [loading, temperatureData]);
 
-  if (!isOpen) return null;
-
   const timeRange = domain.end - domain.start || 1;
-  const scaleX = (timestamp) => ((timestamp - domain.start) / timeRange) * PLOT_WIDTH;
+  const scaleX = useCallback(
+    (timestamp) => ((timestamp - domain.start) / timeRange) * PLOT_WIDTH,
+    [domain.start, timeRange]
+  );
 
-  const nearestPointTo = (plotX) => {
-    if (temperatureData.length === 0) return null;
+  const nearestPointTo = useCallback(
+    (plotX) => {
+      if (temperatureData.length === 0) return null;
 
-    const targetTime = domain.start + (plotX / PLOT_WIDTH) * timeRange;
+      const targetTime = domain.start + (plotX / PLOT_WIDTH) * timeRange;
 
-    return temperatureData.reduce((best, candidate) =>
-      Math.abs(candidate.timestamp - targetTime) < Math.abs(best.timestamp - targetTime)
-        ? candidate
-        : best
-    );
-  };
-
-  const showValueAt = (event) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    setHovered(nearestPointTo(event.clientX - bounds.left));
-  };
-
-  const handlePointerMove = (event) => {
-    if (event.pointerType === 'touch') {
-      // A moving finger is panning the chart, not asking for a reading.
-      clearTimeout(touchHoldRef.current);
-      setHovered(null);
-      return;
-    }
-    showValueAt(event);
-  };
+      return temperatureData.reduce((best, candidate) =>
+        Math.abs(candidate.timestamp - targetTime) < Math.abs(best.timestamp - targetTime)
+          ? candidate
+          : best
+      );
+    },
+    [temperatureData, domain.start, timeRange]
+  );
 
   /*
-   * Touch has to choose between panning and inspecting. A short hold that has not turned into a
-   * pan reads as inspecting, which leaves an ordinary swipe free to scroll.
+   * Touch has to serve both panning and reading values off the line. Handing horizontal gestures
+   * to the browser made that impossible: once it had started a pan, touchmove was no longer
+   * cancelable and a finger sliding along the series could not scrub. So horizontal touch is
+   * handled here instead, and what the finger landed on decides which it is. touch-action stays
+   * pan-y, leaving a vertical swipe to scroll the page as usual.
    */
-  const handlePointerDown = (event) => {
-    if (event.pointerType !== 'touch') return;
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
 
-    const { clientX, currentTarget } = event;
-    const bounds = currentTarget.getBoundingClientRect();
-    clearTimeout(touchHoldRef.current);
-    touchHoldRef.current = setTimeout(() => {
-      setHovered(nearestPointTo(clientX - bounds.left));
-    }, 200);
-  };
+    const plotXOf = (clientX) => clientX - svg.getBoundingClientRect().left;
 
-  const endTouch = () => {
-    clearTimeout(touchHoldRef.current);
+    const onTouchStart = (event) => {
+      if (event.touches.length !== 1) return;
+
+      const touch = event.touches[0];
+      const bounds = svg.getBoundingClientRect();
+      const point = nearestPointTo(touch.clientX - bounds.left);
+      const onSeries =
+        point && Math.abs(touch.clientY - bounds.top - scaleY(point.temperature)) <= TOUCH_GRAB_PX;
+
+      if (onSeries) {
+        gestureRef.current = { kind: 'scrub' };
+        setHovered(point);
+        event.preventDefault();
+        return;
+      }
+
+      gestureRef.current = {
+        kind: 'pan',
+        startX: touch.clientX,
+        startScrollLeft: scrollerRef.current?.scrollLeft ?? 0
+      };
+      setHovered(null);
+    };
+
+    const onTouchMove = (event) => {
+      const gesture = gestureRef.current;
+      if (event.touches.length !== 1) return;
+
+      const touch = event.touches[0];
+
+      if (gesture.kind === 'scrub') {
+        event.preventDefault();
+        setHovered(nearestPointTo(plotXOf(touch.clientX)));
+        return;
+      }
+
+      if (gesture.kind === 'pan' && scrollerRef.current) {
+        event.preventDefault();
+        scrollerRef.current.scrollLeft =
+          gesture.startScrollLeft - (touch.clientX - gesture.startX);
+      }
+    };
+
+    const endGesture = () => {
+      gestureRef.current = { kind: 'none' };
+    };
+
+    svg.addEventListener('touchstart', onTouchStart, { passive: false });
+    svg.addEventListener('touchmove', onTouchMove, { passive: false });
+    svg.addEventListener('touchend', endGesture);
+    svg.addEventListener('touchcancel', endGesture);
+
+    return () => {
+      svg.removeEventListener('touchstart', onTouchStart);
+      svg.removeEventListener('touchmove', onTouchMove);
+      svg.removeEventListener('touchend', endGesture);
+      svg.removeEventListener('touchcancel', endGesture);
+    };
+  }, [nearestPointTo, loading, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handlePointerMove = (event) => {
+    if (event.pointerType === 'touch') return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setHovered(nearestPointTo(event.clientX - bounds.left));
   };
 
   const renderBody = () => {
@@ -190,6 +246,19 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
 
     return (
       <div className="graph-layout">
+        {/* Pinned to the top of the chart rather than to the point, so a finger cannot cover it. */}
+        {hovered && (
+          <div className="graph-readout">
+            <span className="graph-readout-value">{hovered.temperature.toFixed(1)}°C</span>
+            <span className="graph-readout-time">
+              {new Date(hovered.timestamp).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+          </div>
+        )}
+
         <svg
           className="graph-y-axis"
           width={AXIS_WIDTH}
@@ -226,16 +295,13 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         >
           <svg
             className="temperature-graph"
+            ref={svgRef}
             width={PLOT_WIDTH}
             height={SVG_HEIGHT}
             viewBox={`0 0 ${PLOT_WIDTH} ${SVG_HEIGHT}`}
             onPointerMove={handlePointerMove}
-            onPointerDown={handlePointerDown}
-            onPointerUp={endTouch}
-            onPointerCancel={endTouch}
-            onPointerLeave={() => {
-              endTouch();
-              setHovered(null);
+            onPointerLeave={(event) => {
+              if (event.pointerType !== 'touch') setHovered(null);
             }}
           >
             {heatingPeriods.map((period, idx) => (
@@ -316,38 +382,6 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
                   stroke="#fff"
                   strokeWidth="2"
                 />
-                {(() => {
-                  const boxWidth = 104;
-                  const boxHeight = 42;
-                  const x = Math.min(
-                    Math.max(scaleX(hovered.timestamp) - boxWidth / 2, 2),
-                    PLOT_WIDTH - boxWidth - 2
-                  );
-                  const y = Math.max(scaleY(hovered.temperature) - boxHeight - 12, PADDING_TOP);
-
-                  return (
-                    <g>
-                      <rect
-                        x={x}
-                        y={y}
-                        width={boxWidth}
-                        height={boxHeight}
-                        rx="6"
-                        fill="#263238"
-                        opacity="0.95"
-                      />
-                      <text x={x + boxWidth / 2} y={y + 17} textAnchor="middle" fontSize="13" fontWeight="600" fill="#fff">
-                        {hovered.temperature.toFixed(1)}°C
-                      </text>
-                      <text x={x + boxWidth / 2} y={y + 33} textAnchor="middle" fontSize="11" fill="#b0bec5">
-                        {new Date(hovered.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </text>
-                    </g>
-                  );
-                })()}
               </g>
             )}
           </svg>
@@ -361,9 +395,9 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
       <div className="dhw-graph-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="dhw-graph-header">
           <div>
-            <h2>DHW Temperature (Last {HOURS_TOTAL} Hours)</h2>
+            <h2>DHW Temperature</h2>
             <p className="dhw-graph-hint">
-              Drag to pan · hover or hold to read a value · 🟦 Immersion 🟧 Oil
+              Drag to pan · slide along the line to read values · 🟦 Immersion 🟧 Oil
             </p>
           </div>
           <button className="close-button" onClick={onClose}>✕</button>

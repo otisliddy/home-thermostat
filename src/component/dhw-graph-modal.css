@@ -76,6 +76,33 @@
 .graph-layout {
   display: flex;
   align-items: flex-start;
+  position: relative;
+}
+
+.graph-readout {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: rgba(38, 50, 56, 0.95);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.graph-readout-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.graph-readout-time {
+  font-size: 12px;
+  color: #b0bec5;
 }
 
 .graph-y-axis {
@@ -87,14 +114,14 @@
   /* Width comes from HOURS_VISIBLE so the visible window has one source of truth. */
   overflow-x: auto;
   overflow-y: hidden;
-  touch-action: pan-x;
   overscroll-behavior-x: contain;
 }
 
 .temperature-graph {
   display: block;
   cursor: crosshair;
-  touch-action: pan-x;
+  /* Horizontal gestures are handled in JS; only vertical is left to the browser. */
+  touch-action: pan-y;
 }
 
 .graph-loading,
