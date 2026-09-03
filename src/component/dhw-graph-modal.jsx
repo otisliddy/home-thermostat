@@ -396,9 +396,7 @@ const DhwGraphModal = ({ isOpen, onClose, dynamodbClient, temperatureTableName, 
         <div className="dhw-graph-header">
           <div>
             <h2>DHW Temperature</h2>
-            <p className="dhw-graph-hint">
-              Drag to pan · slide along the line to read values · 🟦 Immersion 🟧 Oil
-            </p>
+            <p className="dhw-graph-hint">🟦 Immersion 🟧 Oil</p>
           </div>
           <button className="close-button" onClick={onClose}>✕</button>
         </div>
