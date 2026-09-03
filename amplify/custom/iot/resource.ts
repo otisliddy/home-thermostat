@@ -8,8 +8,9 @@ const branchName = process.env.AWS_BRANCH ?? 'sandbox';
 
 /*
  * Branch-suffixed copies of the hand-made Gen 1 things, so nothing here touches the ones the
- * heating runs on. Certificates are absent because CloudFormation cannot return a private key;
- * they are minted at cutover. See "IoT cutover" in the README.
+ * heating runs on. Three things across two boards: the thermostat drives both relays.
+ * Certificates are absent because CloudFormation cannot return a private key; they are minted at
+ * cutover. See "IoT cutover" in the README.
  */
 const RELAY_DEVICES = ['ht-main', 'ht-immersion'];
 const SENSOR_DEVICES = ['ht-dhw-temp'];
@@ -33,12 +34,12 @@ export function defineIotResources(backend: Backend, temperatureTable: Table) {
     Arn.format({ service: 'iot', region, account, resource, resourceName }, stack);
 
   /*
-   * Scoped by the thing name on the connection rather than by listing every device and topic:
-   * enumerating them overflowed IoT's 2048-byte policy limit, and this way a certificate can only
-   * reach the shadow of the thing it is attached to.
+   * Scoped by name prefix, not by ${iot:Connection.Thing.ThingName}: one certificate is shared by
+   * both boards and covers all three things, and the thermostat board drives the oil and immersion
+   * relays over a single connection, so a per-connection-thing policy would lock it out of one of
+   * the two shadows. The sketches set no client id, so Connect cannot be narrowed either.
    */
-  const CONNECTED_THING = '${iot:Connection.Thing.ThingName}';
-  const ownShadow = `$aws/things/${CONNECTED_THING}/shadow/name/*`;
+  const branchShadows = `$aws/things/ht-*-${branchName}/shadow/name/*`;
 
   const devicePolicy = new CfnPolicy(stack, 'devicePolicy', {
     policyName: `ht-device-policy-${branchName}`,
@@ -48,17 +49,17 @@ export function defineIotResources(backend: Backend, temperatureTable: Table) {
         {
           Effect: 'Allow',
           Action: 'iot:Connect',
-          Resource: iotArn('client', CONNECTED_THING)
+          Resource: iotArn('client', '*')
         },
         {
           Effect: 'Allow',
           Action: ['iot:Publish', 'iot:Receive'],
-          Resource: iotArn('topic', ownShadow)
+          Resource: iotArn('topic', branchShadows)
         },
         {
           Effect: 'Allow',
           Action: 'iot:Subscribe',
-          Resource: iotArn('topicfilter', ownShadow)
+          Resource: iotArn('topicfilter', branchShadows)
         }
       ]
     }

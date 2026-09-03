@@ -42,13 +42,28 @@ Which things the app and lambdas address is a separate switch:
 addressing `ht-main` and `ht-immersion`, and every other branch addresses its own things - which is
 what makes a sandbox safe to test against, since its things have no hardware behind them.
 
+There are two boards but three things. `thermostatAwsIot` drives both relays from one ESP8266 -
+oil on D2, immersion on D5 - over a single MQTT connection, and `tempSensor` is the second board.
+Both currently share one certificate (`e6da39c342...`), which is attached to `ht-main` only and
+carries `HtMainPolicy` (`iot:*` on `*`); that breadth is what makes the shared certificate work
+today.
+
+`ht-device-policy-<branch>` is scoped to `ht-*-<branch>` shadows rather than to the connecting
+thing, because a per-thing policy would lock the thermostat board out of one of its two relays.
+
 To cut over:
 
-1. Mint a certificate and attach it to the new thing and `ht-device-policy-master`:
+1. Mint a certificate and attach it to the new things and `ht-device-policy-master`. One
+   certificate per board is enough; attach the thermostat's to both `ht-main-master` and
+   `ht-immersion-master`:
    `aws iot create-keys-and-certificate --set-as-active --certificate-pem-outfile ... --profile personal`
-2. Put the certificate in the sketch's `certs.h`, change the topic names to the suffixed thing, flash it.
-3. Set `DEVICES_REFLASHED_ONTO_BRANCH_THINGS` to true and deploy.
-4. Delete the old things, certificates, `HtMainPolicy` and `DwhTempToDynamoDB`.
+2. Put it in the sketch's `certs.h`, change the topic constants to the suffixed thing names, and
+   flash both boards.
+3. Set `DEVICES_REFLASHED_ONTO_BRANCH_THINGS` to true in `amplify/backend.ts` and deploy.
+4. Delete the old things, the shared certificate, `HtMainPolicy` and `DwhTempToDynamoDB`.
+
+Nothing else requires a reflash. The sketches are untouched by the move to Gen 2 and work against
+the current backend as they are.
 
 # Live updates in the browser
 
