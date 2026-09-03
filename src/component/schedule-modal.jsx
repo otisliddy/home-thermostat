@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './schedule-modal.css';
+import { DHW_MAX_TARGET_C, DHW_MIN_TARGET_C, DHW_TARGET_STEP_C } from '../config/dhw';
 
 const ScheduleModal = ({ show, handleConfirm, handleCancel }) => {
   const [startTime, setStartTime] = useState('07:40');
@@ -152,17 +153,17 @@ const ScheduleModal = ({ show, handleConfirm, handleCancel }) => {
                 <input
                   id="schedule-target-temp"
                   type="range"
-                  min="30"
-                  max="52"
-                  step="0.5"
+                  min={DHW_MIN_TARGET_C}
+                  max={DHW_MAX_TARGET_C}
+                  step={DHW_TARGET_STEP_C}
                   value={targetTemp}
                   onChange={(e) => setTargetTemp(parseFloat(e.target.value))}
                   className="temp-slider"
                 />
                 <div className="slider-value">{targetTemp.toFixed(1)}°C</div>
                 <div className="slider-labels">
-                  <span>30°C</span>
-                  <span>52°C</span>
+                  <span>{DHW_MIN_TARGET_C}°C</span>
+                  <span>{DHW_MAX_TARGET_C}°C</span>
                 </div>
               </div>
             </div>

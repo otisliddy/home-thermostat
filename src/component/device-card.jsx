@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './device-card.css';
+import { DHW_MAX_TARGET_C, DHW_MIN_TARGET_C, DHW_TARGET_STEP_C } from '../config/dhw';
 
 const toMs = (seconds) => (seconds > 10000000000 ? seconds : seconds * 1000);
 
@@ -288,9 +289,9 @@ const DeviceCard = ({
               <div className="slider-container">
                 <input
                   type="range"
-                  min="30"
-                  max="52"
-                  step="0.5"
+                  min={DHW_MIN_TARGET_C}
+                  max={DHW_MAX_TARGET_C}
+                  step={DHW_TARGET_STEP_C}
                   value={targetTemp}
                   onChange={(e) => setTargetTemp(parseFloat(e.target.value))}
                   className="temp-slider"
